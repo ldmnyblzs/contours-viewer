@@ -102,7 +102,6 @@ GD::Image wxVTKWidget::Screenshot() {
 void wxVTKWidget::Resize(wxSizeEvent &event) {
   if (m_interactor) {
     auto const size = event.GetSize();
-    std::cout << size.GetWidth() << 'x' << size.GetHeight() << std::endl;
     m_interactor->UpdateSize(size.GetWidth(), size.GetHeight());
   }
   //event.Skip();
