@@ -15,8 +15,6 @@
 
 #include "ratios.hpp"
 
-typedef CGAL::Polygon_2<Kernel> Polygon;
-
 Mesh::Mesh(std::istream &stream, const format form) {
   std::vector<Point> points;
   switch (form) {
@@ -155,7 +153,7 @@ void Mesh::measure() {
     }
 
     // get the outline
-    Polygon outline;
+    CGAL::Polygon_2<Kernel> outline;
     CGAL::convex_hull_2(projected_points.cbegin(), projected_points.cend(), std::back_inserter(outline));
     m_projected_circumference = std::accumulate(outline.edges_begin(), outline.edges_end(), double(0.0), [](auto init, const auto &edge) {
         return init + CGAL::sqrt(edge.squared_length());

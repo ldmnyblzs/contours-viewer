@@ -8,12 +8,11 @@ project(tr)
 find_package(Boost REQUIRED filesystem)
 find_package(wxWidgets REQUIRED core base gl aui adv)
 include(${wxWidgets_USE_FILE})
-find_package(VTK REQUIRED)
+find_package(VTK REQUIRED vtkRenderingOpenGL2 vtkRenderingAnnotation vtkInteractionStyle vtkInfovisLayout vtkViewsInfovis)
 include(${VTK_USE_FILE})
+find_package(TBB REQUIRED)
 find_package(CGAL REQUIRED Core)
 
-
-find_package(TBB REQUIRED)
 find_package(GD REQUIRED)
 include_directories(${GD_INCLUDE_DIRS})
 
@@ -22,4 +21,14 @@ target_compile_definitions(tr PRIVATE WXUSINGDLL)
 target_compile_definitions(tr PRIVATE NOMINMAX)
 target_compile_definitions(tr PRIVATE _CRT_SECURE_NO_WARNINGS)
 
-target_link_libraries(tr PRIVATE Boost::filesystem ${VTK_LIBRARIES} ${wxWidgets_LIBRARIES} CGAL::CGAL CGAL::CGAL_Core tbb ${GD_LIBRARIES})
+target_link_libraries(tr PRIVATE Boost::filesystem ${VTK_LIBRARIES} ${wxWidgets_LIBRARIES} CGAL::CGAL CGAL::CGAL_Core TBB::tbb ${GD_LIBRARIES})
+
+install(TARGETS tr RUNTIME DESTINATION .)
+install(CODE
+"
+	include(BundleUtilities)
+	fixup_bundle(\"\$\{CMAKE_INSTALL_PREFIX\}/tr.exe\" \"\" \"\")
+"
+DESTINATION .)
+
+include(CPack)
