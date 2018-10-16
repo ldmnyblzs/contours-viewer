@@ -1,8 +1,3 @@
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
-
 #include "batchfile.hpp"
 #include "parametersview.hpp"
 #include "filesview.hpp"

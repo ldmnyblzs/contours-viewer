@@ -1,6 +1,6 @@
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
-#include <wx/wx.h>
+#include <wx/dcclient.h>
 #endif
 
 #include "wxVTKWidget.hpp"
