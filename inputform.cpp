@@ -1,11 +1,14 @@
-#include "inputform.hpp"
-
-#include <wx/sizer.h>
+#include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/panel.h>
 #include <wx/stattext.h>
-#include <wx/spinctrl.h>
-#include <wx/button.h>
+#include <wx/sizer.h>
+#endif
 
 #include <fstream>
+#include <wx/spinctrl.h>
+
+#include "inputform.hpp"
 
 void InputForm::Initialize() {
   m_count = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10000, 100);

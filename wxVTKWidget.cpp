@@ -1,7 +1,11 @@
+#include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/wx.h>
+#endif
+
 #include "wxVTKWidget.hpp"
 
 #include <iostream>
-#include <wx/dcclient.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkRendererCollection.h>
 #include <vtkWindowToImageFilter.h>

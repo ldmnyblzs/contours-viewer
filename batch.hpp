@@ -1,10 +1,9 @@
 #ifndef BATCH_HPP
 #define BATCH_HPP
 
-#include "ratios.hpp"
-
 #include <boost/filesystem/path.hpp>
 
+#include "ratios.hpp"
 #include "parameters.hpp"
 #include "computation.hpp"
 
@@ -28,6 +27,8 @@ struct MeshData {
   {
   }
 };
+
+#undef Status
 
 enum Status {
     WAITING,

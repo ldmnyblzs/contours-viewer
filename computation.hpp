@@ -28,6 +28,7 @@ class Computation
 public:
   /*!
    * Create a Computation with the given mesh
+   * @param mesh the mesh
    */
   explicit Computation(Mesh mesh, std::function<bool()> cancelled = []{return false;});
   /*!

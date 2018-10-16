@@ -1,7 +1,6 @@
 #ifndef INPUT_FORM_HPP
 #define INPUT_FORM_HPP
 
-#include <wx/panel.h>
 #include <array>
 
 #include "parameters.hpp"

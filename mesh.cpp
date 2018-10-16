@@ -5,9 +5,9 @@
 #include <boost/range/algorithm/transform.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+//#include <boost/algorithm/string.hpp>
 #include <CGAL/IO/read_off_points.h>
-#include <CGAL/IO/STL_reader.h>
+//#include <CGAL/IO/STL_reader.h>
 #include <CGAL/centroid.h>
 #include <CGAL/convex_hull_3.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
@@ -31,8 +31,8 @@ Mesh::Mesh(std::istream &stream, const format form) {
     // triangles ignoring if it has reached the end of file yet which in turn
     // leads to a seemingly infinite loop.
     try {
-      if (!CGAL::read_STL(stream, temp_points, facets))
-	throw "Invalid file";
+      //      if (!CGAL::read_STL(stream, temp_points, facets))
+      //	throw "Invalid file";
     } catch (...) {
     }
     if (temp_points.size() < 4)

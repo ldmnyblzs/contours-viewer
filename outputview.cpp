@@ -1,8 +1,9 @@
-#include "outputview.hpp"
-
-#include <gdfontl.h>
+#include <wx/grid.h>
 #include <wx/filename.h>
 
+#include <gdfontl.h>
+
+#include "outputview.hpp"
 #include "ratios.hpp"
 #include "parameters.hpp"
 

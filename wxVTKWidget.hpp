@@ -3,16 +3,17 @@
 
 #include <unordered_map>
 #include <memory>
-#include <wx/glcanvas.h>
-#include <wx/timer.h>
+
 #include <vtkGenericRenderWindowInteractor.h>
 #include <vtkNew.h>
 #include <vtkSmartPointer.h>
 #include <vtkCallbackCommand.h>
-#define HAVE_LIBPNG
-#undef TrueColor
 #include <gdpp.h>
 
+#include <wx/timer.h>
+#include <wx/glcanvas.h>
+
+#undef TrueColor
 
 class wxVTKWidget : public wxGLCanvas {
   wxGLContext *m_context;

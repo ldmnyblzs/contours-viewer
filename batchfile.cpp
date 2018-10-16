@@ -1,9 +1,9 @@
+#include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/wx.h>
+#endif
+
 #include "batchfile.hpp"
-
-#include <wx/filedlg.h>
-#include <wx/sizer.h>
-#include <wx/strconv.h>
-
 #include "parametersview.hpp"
 #include "filesview.hpp"
 
@@ -59,13 +59,12 @@ void BatchFile::StatusChanged(std::size_t index, Status status) const {
 }
 
 wxThread::ExitCode BatchFile::Entry() {
-  using namespace std::placeholders;
   wxMutexLocker mutex_lock(m_run_mutex);
   {
     wxCriticalSectionLocker lock(m_model_cs);
     m_batch = std::make_unique<Batch>(m_fileName.ToStdString(wxConvUTF8),
 	std::bind(&BatchFile::Cancelled, this),
-	std::bind(&BatchFile::StatusChanged, this, _1, _2));
+	std::bind(&BatchFile::StatusChanged, this, std::placeholders::_1, std::placeholders::_2));
     wxQueueEvent(GetEventHandler(), new wxThreadEvent(wxEVT_BATCHFILE_LOADED));
   }
   while (!GetThread()->TestDestroy()) {

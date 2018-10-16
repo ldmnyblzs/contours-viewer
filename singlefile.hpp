@@ -1,10 +1,6 @@
 #ifndef SINGLE_FILE_HPP
 #define SINGLE_FILE_HPP
 
-#include <wx/window.h>
-#include <wx/thread.h>
-#include <wx/aui/framemanager.h>
-
 #include "computable.hpp"
 #include "computation.hpp"
 

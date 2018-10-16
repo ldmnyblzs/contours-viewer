@@ -1,9 +1,6 @@
 #ifndef BATCH_FILE_HPP
 #define BATCH_FILE_HPP
 
-#include <wx/window.h>
-#include <wx/thread.h>
-
 #include "computable.hpp"
 #include "batch.hpp"
 

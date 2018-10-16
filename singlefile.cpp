@@ -1,12 +1,18 @@
+#include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/filedlg.h>
+#endif
+
+#include <wx/aui/aui.h>
+#include <wx/wfstream.h>
+#include <wx/stdstream.h>
+#include <wx/grid.h>
+
 #include "singlefile.hpp"
 #include "inputform.hpp"
 #include "meshview.hpp"
 #include "graphview.hpp"
 #include "outputview.hpp"
-
-#include <wx/filedlg.h>
-#include <wx/wfstream.h>
-#include <wx/stdstream.h>
 
 wxDEFINE_EVENT(wxEVT_SINGLEFILE_LOADED, wxThreadEvent);
 wxDEFINE_EVENT(wxEVT_SINGLEFILE_COMPUTED, wxThreadEvent);

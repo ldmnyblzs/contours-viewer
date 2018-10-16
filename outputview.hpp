@@ -1,8 +1,6 @@
 #ifndef OUTPUT_VIEW_HPP
 #define OUTPUT_VIEW_HPP
 
-#include <wx/grid.h>
-#define HAVE_LIBPNG
 #undef TrueColor
 #include <gdpp.h>
 

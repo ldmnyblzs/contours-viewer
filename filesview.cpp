@@ -1,3 +1,8 @@
+#include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/wx.h>
+#endif
+
 #include "filesview.hpp"
 
 static constexpr const char* labels[] = {"File name", "Status"};

@@ -1,5 +1,6 @@
 #include "meshview.hpp"
 
+#include <boost/math/constants/constants.hpp>
 #include <vtkLookupTable.h>
 #include <vtkActor.h>
 #include <vtkRenderer.h>
@@ -15,12 +16,10 @@
 #include <vtkCellData.h>
 #include <vtkUnsignedCharArray.h>
 #include <vtkProperty.h>
-#include <boost/math/constants/constants.hpp>
+#include <vtkLightCollection.h>
 
 #include "mesh.hpp"
 #include "levelgraph.hpp"
-
-#include <vtkLightCollection.h>
 
 void MeshView::Initialize() {
   vtkNew<vtkActor> meshActor;

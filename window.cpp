@@ -1,11 +1,15 @@
-#include "window.hpp"
-
+#include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/app.h>
+#include <wx/window.h>
 #include <wx/menu.h>
 #include <wx/toolbar.h>
-#include <wx/aui/auibook.h>
 #include <wx/filedlg.h>
-#include <wx/stdpaths.h>
+#endif
+
+#include <wx/aui/aui.h>
 #include <wx/artprov.h>
+#include <wx/stdpaths.h>
 #include <wx/wupdlock.h>
 
 #include "singlefile.hpp"
@@ -13,7 +17,37 @@
 
 static const wxWindowID NotebookID = wxID_HIGHEST + 1;
 
-void Window::Initialize() {
+class Application final : public wxApp {
+  bool OnInit() final;
+};
+
+class MainWindow final : public wxFrame {
+	wxAuiNotebook *tabBar;
+	void Initialize();
+	void OnOpen(wxCommandEvent &event);
+	void OnSave(wxCommandEvent &event);
+	void OnCompute(wxCommandEvent &event);
+	void OnCancel(wxCommandEvent &event);
+	void OnRunningChanged();
+	void OnTabChanged(wxAuiNotebookEvent &event);
+public:
+	template <typename... Args>
+	explicit MainWindow(Args&&... args) :
+	wxFrame(std::forward<Args>(args)...) {
+		Initialize();
+	}
+};
+
+wxIMPLEMENT_APP(Application);
+
+bool Application::OnInit() {
+  auto window = new MainWindow(nullptr, wxID_ANY, "Shape descriptors");
+  window->SetEventHandler(window);
+  window->Show(true);
+  return true;
+}
+
+void MainWindow::Initialize() {
 	auto fileMenu = new wxMenu;
 	fileMenu->Append(wxID_OPEN, "Open");
 	fileMenu->Append(wxID_SAVE, "Save");
@@ -38,16 +72,16 @@ void Window::Initialize() {
 	toolbar->AddTool(wxID_CANCEL, "Cancel", wxArtProvider::GetBitmap(wxART_DELETE, wxART_TOOLBAR));
 	toolbar->Realize();
 	
-	Bind(wxEVT_MENU, &Window::OnOpen, this, wxID_OPEN);
-	Bind(wxEVT_MENU, &Window::OnSave, this, wxID_SAVE);
-	Bind(wxEVT_MENU, &Window::OnCompute, this, wxID_EXECUTE);
-	Bind(wxEVT_MENU, &Window::OnCancel, this, wxID_CANCEL);
+	Bind(wxEVT_MENU, &MainWindow::OnOpen, this, wxID_OPEN);
+	Bind(wxEVT_MENU, &MainWindow::OnSave, this, wxID_SAVE);
+	Bind(wxEVT_MENU, &MainWindow::OnCompute, this, wxID_EXECUTE);
+	Bind(wxEVT_MENU, &MainWindow::OnCancel, this, wxID_CANCEL);
 	
 	tabBar = new wxAuiNotebook(this, NotebookID);
-	Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, &Window::OnTabChanged, this, NotebookID);
+	Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, &MainWindow::OnTabChanged, this, NotebookID);
 }
 
-void Window::OnOpen(wxCommandEvent & WXUNUSED(event)) {
+void MainWindow::OnOpen(wxCommandEvent & WXUNUSED(event)) {
   wxFileDialog dialog(this,
 		      wxFileSelectorPromptStr,
 		      wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Documents),
@@ -65,14 +99,14 @@ void Window::OnOpen(wxCommandEvent & WXUNUSED(event)) {
   case 0:
     for (std::size_t i = 0; i < paths.GetCount(); ++i) {
 	  auto tab = new SingleFile(paths[i], tabBar, wxID_ANY);
-	  tab->SetRunningChanged(std::bind(&Window::OnRunningChanged, this));
+	  tab->SetRunningChanged(std::bind(&MainWindow::OnRunningChanged, this));
       tabBar->AddPage(tab, filenames[i], true);
 	}
     break;
   default:
     for (std::size_t i = 0; i < paths.GetCount(); ++i) {
 	  auto tab = new BatchFile(paths[i], tabBar, wxID_ANY);
-	  tab->SetRunningChanged(std::bind(&Window::OnRunningChanged, this));
+	  tab->SetRunningChanged(std::bind(&MainWindow::OnRunningChanged, this));
       tabBar->AddPage(tab, filenames[i], true);
 	}
   }
@@ -80,25 +114,25 @@ void Window::OnOpen(wxCommandEvent & WXUNUSED(event)) {
   GetMenuBar()->Enable(wxID_EXECUTE, false);
 }
 
-void Window::OnSave(wxCommandEvent & WXUNUSED(event)) {
+void MainWindow::OnSave(wxCommandEvent & WXUNUSED(event)) {
   auto file = dynamic_cast<Computable *>(tabBar->GetCurrentPage());
   if (file)
     file->Save();
 }
 
-void Window::OnCompute(wxCommandEvent & WXUNUSED(event)) {
+void MainWindow::OnCompute(wxCommandEvent & WXUNUSED(event)) {
   auto file = dynamic_cast<Computable *>(tabBar->GetCurrentPage());
   if (file)
     file->Compute();
 }
 
-void Window::OnCancel(wxCommandEvent & WXUNUSED(event)) {
+void MainWindow::OnCancel(wxCommandEvent & WXUNUSED(event)) {
   auto file = dynamic_cast<Computable *>(tabBar->GetCurrentPage());
   if (file)
     file->Cancel();
 }
 
-void Window::OnRunningChanged() {
+void MainWindow::OnRunningChanged() {
   auto tab = dynamic_cast<Computable *>(tabBar->GetCurrentPage());
   if (tab) {
 	  GetToolBar()->EnableTool(wxID_EXECUTE, !tab->Running());
@@ -108,7 +142,7 @@ void Window::OnRunningChanged() {
   }
 }
 
-void Window::OnTabChanged(wxAuiNotebookEvent &event) {
+void MainWindow::OnTabChanged(wxAuiNotebookEvent &event) {
   auto tab = dynamic_cast<Computable *>(tabBar->GetCurrentPage());
   GetToolBar()->EnableTool(wxID_EXECUTE, !tab->Running());
   GetToolBar()->EnableTool(wxID_CANCEL, tab->Running());
