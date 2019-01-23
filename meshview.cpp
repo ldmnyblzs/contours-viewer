@@ -1,29 +1,32 @@
 #include "meshview.hpp"
 
 #include <boost/math/constants/constants.hpp>
-#include <vtkLookupTable.h>
+#include <boost/range/algorithm/sort.hpp>
+#include <boost/range/algorithm/binary_search.hpp>
+#include <boost/range/irange.hpp>
 #include <vtkActor.h>
-#include <vtkRenderer.h>
-#include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkInteractorStyleTrackballCamera.h>
-#include <vtkGenericRenderWindowInteractor.h>
-#include <vtkPolyData.h>
-#include <vtkPoints.h>
-#include <vtkCellArray.h>
 #include <vtkAppendPolyData.h>
 #include <vtkArcSource.h>
-#include <vtkRegularPolygonSource.h>
+#include <vtkCellArray.h>
 #include <vtkCellData.h>
-#include <vtkUnsignedCharArray.h>
-#include <vtkProperty.h>
+#include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkGenericRenderWindowInteractor.h>
+#include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkLightCollection.h>
-
-#include "mesh.hpp"
-#include "levelgraph.hpp"
+#include <vtkLookupTable.h>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkProperty.h>
+#include <vtkRenderer.h>
+#include <vtkUnsignedCharArray.h>
 
 void MeshView::Initialize() {
+  vtkNew<vtkPolyDataMapper> meshMapper;
+  meshMapper->SetInputData(m_displayedMesh.GetPointer());
+
   vtkNew<vtkActor> meshActor;
-  meshActor->SetMapper(m_meshMapper.GetPointer());
+  meshActor->SetMapper(meshMapper.GetPointer());
   meshActor->GetProperty()->BackfaceCullingOn();
   meshActor->GetProperty()->SetColor(0.8, 0.8, 0.8);
   meshActor->GetProperty()->LightingOff();
@@ -31,33 +34,24 @@ void MeshView::Initialize() {
   meshActor->GetProperty()->ShadingOff();
   meshActor->GetProperty()->EdgeVisibilityOn();
   meshActor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0);
-  
-  /*vtkNew<vtkLookupTable> contourColors;
+
+  vtkNew<vtkLookupTable> contourColors;
   contourColors->SetNumberOfTableValues(3);
   contourColors->Build();
-  
-  contourColors->SetTableValue(LevelGraph::SIMPLE, 0.0, 0.0, 1.0);
-  contourColors->SetTableValue(LevelGraph::STABLE, 0.0, 1.0, 0.0);
-  contourColors->SetTableValue(LevelGraph::UNSTABLE, 1.0, 0.0, 0.0);*/
-  
-  /*m_contourMapper->SetScalarRange(LevelGraph::SIMPLE, LevelGraph::UNSTABLE);
-  m_contourMapper->SetColorModeToMapScalars();
-  m_contourMapper->SetLookupTable(contourColors.GetPointer());*/
-  
-	std::array<vtkNew<vtkActor>, 3> contourActors;
-	for (std::size_t i = 0; i < 3; ++i) {
-		contourActors[i]->SetMapper(m_contourMappers[i].GetPointer());
-		contourActors[i]->SetScale(1.001);
-		contourActors[i]->GetProperty()->BackfaceCullingOn();
-		contourActors[i]->GetProperty()->LightingOff();
-		contourActors[i]->GetProperty()->SetInterpolationToFlat();
-		contourActors[i]->GetProperty()->ShadingOff();
-	}
-  
-  contourActors[0]->GetProperty()->SetColor(0.0, 0.0, 1.0);
-  contourActors[1]->GetProperty()->SetColor(0.0, 1.0, 0.0);
-  contourActors[2]->GetProperty()->SetColor(1.0, 0.0, 0.0);
-  
+
+  contourColors->SetTableValue(0, 0.0, 0.0, 1.0);
+  contourColors->SetTableValue(1, 0.0, 1.0, 0.0);
+  contourColors->SetTableValue(2, 1.0, 0.0, 0.0);
+
+  vtkNew<vtkPolyDataMapper> contourMapper;
+  contourMapper->SetInputData(m_displayedArcs.GetPointer());
+  contourMapper->SetScalarRange(0, 2);
+  contourMapper->SetColorModeToMapScalars();
+  contourMapper->SetLookupTable(contourColors.GetPointer());
+
+  vtkNew<vtkActor> contourActor;
+  contourActor->SetMapper(contourMapper.GetPointer());
+
   m_axesActor->SetConeResolution(20);
   m_axesActor->AxisLabelsOff();
   m_axesActor->GetXAxisTipProperty()->BackfaceCullingOn();
@@ -87,117 +81,93 @@ void MeshView::Initialize() {
   m_axesActor->GetZAxisShaftProperty()->SetInterpolationToFlat();
   m_axesActor->GetZAxisShaftProperty()->ShadingOff();
   m_axesActor->GetZAxisShaftProperty()->SetLineWidth(2.0);
-  
+
   vtkNew<vtkRenderer> renderer;
   renderer->SetBackground(1.0, 1.0, 1.0);
   renderer->AddActor(meshActor.GetPointer());
-  for (std::size_t i = 0; i < 3; ++i)
-	renderer->AddActor(contourActors[i].GetPointer());
+  renderer->AddActor(contourActor.GetPointer());
   renderer->AddActor(m_axesActor.GetPointer());
-  
+
   vtkNew<vtkGenericOpenGLRenderWindow> window;
   window->AddRenderer(renderer.GetPointer());
-  
+
   vtkNew<vtkGenericRenderWindowInteractor> renderWindowInteractor;
   vtkNew<vtkInteractorStyleTrackballCamera> interactorStyle;
   renderWindowInteractor->SetRenderWindow(window.GetPointer());
   renderWindowInteractor->SetInteractorStyle(interactorStyle.GetPointer());
-  
+
   SetRenderWindowInteractor(renderWindowInteractor.GetPointer());
   renderWindowInteractor->Enable();
 }
 
-void MeshView::UpdateMesh(const Mesh &mesh) {
-  vtkNew<vtkPoints> points;
-  for (auto vertex : mesh.vertices()) {
-    const auto point = vertex.point();
-    points->InsertNextPoint(CGAL::to_double(point.x()),
-			    CGAL::to_double(point.y()),
-			    CGAL::to_double(point.z()));
-  }
+void MeshView::PrepareMesh(const Mesh &mesh) {
+  wxCriticalSectionLocker lock(m_critical_section);
   
+  vtkNew<vtkPoints> points;
+  for (const auto vertex : mesh.vertices()) {
+    const auto point = mesh.point(vertex);
+    points->InsertNextPoint(CGAL::to_double(point.x()),
+                            CGAL::to_double(point.y()),
+                            CGAL::to_double(point.z()));
+  }
   vtkNew<vtkCellArray> faces;
   for (auto face : mesh.faces()) {
     faces->InsertNextCell(3);
-    for (auto vertex : face.vertices_around())
-      faces->InsertCellPoint(vertex.handle());
+    for (auto vertex : CGAL::vertices_around_face(mesh.halfedge(face), mesh))
+      faces->InsertCellPoint(get(boost::vertex_index, mesh, vertex));
   }
-  
-  vtkNew<vtkPolyData> data;
-  data->SetPoints(points.GetPointer());
-  data->SetPolys(faces.GetPointer());
-  
-  m_meshMapper->SetInputData(data.GetPointer());
 
-  const auto x_length = mesh.xmax() * 1.5;
-  const auto y_length = mesh.ymax() * 1.5;
-  const auto z_length = mesh.zmax() * 1.5;
-  const auto tip_length = mesh.a() * 0.1;
-  const auto x_shaft_length = x_length - tip_length;
-  const auto y_shaft_length = y_length - tip_length;
-  const auto z_shaft_length = z_length - tip_length;
-  m_axesActor->SetTotalLength(x_length, y_length, z_length);
-  m_axesActor->SetNormalizedTipLength(tip_length / x_length, tip_length / y_length, tip_length / z_length);
-  m_axesActor->SetNormalizedShaftLength(x_shaft_length / x_length, y_shaft_length / y_length, z_shaft_length / z_length);
+  m_preparedMesh->SetPoints(points.GetPointer());
+  m_preparedMesh->SetPolys(faces.GetPointer());
+}
+
+void MeshView::PrepareArcs(const Graph &graph,
+                           std::vector<GraphEdge> stable_edges,
+                           std::vector<GraphEdge> unstable_edges) {
+  wxCriticalSectionLocker lock(m_critical_section);
   
+  using namespace boost;
+
+  sort(stable_edges);
+  sort(unstable_edges);
+  
+  vtkNew<vtkAppendPolyData> data;
+  for (const auto &edge : make_iterator_range(edges(graph))) {
+    for (const auto &arc : graph[edge].arcs) {
+      vtkNew<vtkArcSource> arcSource;
+      arcSource->UseNormalAndAngleOn();
+      arcSource->SetNormal(arc.normal.x(), arc.normal.y(), arc.normal.z());
+      const auto to_source = arc.source - arc.center;
+      const auto to_target = arc.target - arc.center;
+      arcSource->SetPolarVector(to_source.x(), to_source.y(), to_source.z());
+      const auto arc_angle = atan2(-scalar_product(arc.normal, cross_product(to_source, to_target)), -scalar_product(to_source, to_target)) + M_PI;
+      arcSource->SetAngle(arc_angle / M_PI * 180.0);
+      arcSource->SetCenter(arc.center.x(), arc.center.y(), arc.center.z());
+      const int resolution = ceil(sqrt(to_source.squared_length()) * arc_angle) * 5;
+      arcSource->SetResolution(resolution);
+      arcSource->Update();
+
+      vtkNew<vtkIntArray> color;
+      const int value = binary_search(stable_edges, edge) ? 1 : (binary_search(unstable_edges, edge) ? 2 : 0);
+      for (const auto i : irange(0, resolution))
+	color->InsertNextValue(value);
+      
+      arcSource->GetOutput()->GetCellData()->SetScalars(color.GetPointer());
+      data->AddInputData(arcSource->GetOutput());
+    }
+  }
+  data->Update();
+  m_preparedArcs->ShallowCopy(data->GetOutput());
+}
+
+void MeshView::SwapMesh() {
+  wxCriticalSectionLocker lock(m_critical_section);
+  m_displayedMesh->ShallowCopy(m_preparedMesh.GetPointer());
   ResetCamera();
 }
 
-void MeshView::UpdateTexture(const LevelGraph &graph) {
-	using namespace boost::math::double_constants;
-	
-	std::array<int, 3> counts = {0, 0, 0};
-	for (const auto &edge : graph.edges())
-		counts[graph.type(edge)] += graph.arcs(edge).size();
-	
-	std::array<vtkNew<vtkAppendPolyData>, 3> data;
-	for (std::size_t i = 0; i < 3; ++i) {
-		data[i]->UserManagedInputsOn();
-		data[i]->SetNumberOfInputs(counts[i]);
-	}
-	
-	std::array<int, 3> index = {0, 0, 0};
-	for (const auto &edge : graph.edges()) {
-		const auto type = graph.type(edge);
-		for (const auto &arc : graph.arcs(edge)) {
-			const auto center = arc.spherical_circle.center();
-			const auto resolution = static_cast<int>(std::ceil(arc.approximate_length())) * 5;
-			
-			if (arc.source) {
-				const auto to_source = arc.to_source();
-				const auto normal = arc.spherical_circle.supporting_plane().orthogonal_vector();
-				vtkNew<vtkArcSource> arcSource;
-				arcSource->UseNormalAndAngleOn();
-				arcSource->SetNormal(CGAL::to_double(normal.x()),
-					CGAL::to_double(normal.y()),
-					CGAL::to_double(normal.z()));
-				arcSource->SetPolarVector(to_source.x(), to_source.y(), to_source.z());
-				arcSource->SetAngle(arc.angle() / pi * 180.0);
-				arcSource->SetCenter(CGAL::to_double(center.x()), CGAL::to_double(center.y()), CGAL::to_double(center.z()));
-				/*arcSource->SetPoint1(source.x(), source.y(), source.z());
-				arcSource->SetPoint2(target.x(), target.y(), target.z());*/
-				arcSource->SetResolution(resolution);
-				//arcSource->SetNegative(arc.angle() >= pi);
-				data[type]->SetInputConnectionByNumber(index[type]++, arcSource->GetOutputPort());
-			} else {
-				const auto normal = arc.spherical_circle.supporting_plane().orthogonal_vector();
-				vtkNew<vtkRegularPolygonSource> circleSource;
-				circleSource->SetCenter(CGAL::to_double(center.x()), CGAL::to_double(center.y()), CGAL::to_double(center.z()));
-				circleSource->SetRadius(arc.radius());
-				circleSource->SetNormal(CGAL::to_double(normal.x()), CGAL::to_double(normal.y()), CGAL::to_double(normal.z()));
-				circleSource->SetNumberOfSides(resolution);
-				circleSource->GeneratePolygonOff();
-				circleSource->GeneratePolylineOn();
-				data[type]->SetInputConnectionByNumber(index[type]++, circleSource->GetOutputPort());
-			}
-		}
-	}
-	
-	for (std::size_t i = 0; i < 3; ++i) {
-		data[i]->Update();
-		m_contourMappers[i]->SetInputData(data[i]->GetOutput());
-	}
-	
-	Refresh();
-	//ResetCamera();
+void MeshView::SwapArcs() {
+  wxCriticalSectionLocker lock(m_critical_section);
+  m_displayedArcs->ShallowCopy(m_preparedArcs.GetPointer());
+  Refresh();
 }

@@ -33,5 +33,14 @@ void InputForm::Initialize() {
 }
 
 Parameters InputForm::GetParameters() const noexcept {
-	return Parameters(m_count->GetValue(), m_amin->GetValue() / 100.0, m_offset[0]->GetValue(), m_offset[1]->GetValue(), m_offset[2]->GetValue());
+  Parameters parameters;
+  parameters.resize(1);
+  parameters[0].next.resize(1);
+  parameters[0].next[0].next.resize(1);
+  parameters[0].next[0].next[0].next.resize(1);
+  parameters[0].value.offset = Vector(m_offset[0]->GetValue(), m_offset[1]->GetValue(), m_offset[2]->GetValue());
+  parameters[0].next[0].value = m_count->GetValue();
+  parameters[0].next[0].next[0].value = m_amin->GetValue() / 100.0;
+  parameters[0].next[0].next[0].next[0] = FIRST;
+  return parameters;
 }

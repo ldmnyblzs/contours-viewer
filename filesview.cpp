@@ -1,8 +1,10 @@
 #include "filesview.hpp"
+#include <boost/range/adaptor/indexed.hpp>
 
 static constexpr const char* labels[] = {"File name", "Status"};
 static constexpr const char* types[] = {"string", "string"};
 static constexpr std::size_t label_count = sizeof(labels) / sizeof(const char*);
+static constexpr const char* status_labels[] = {"Waiting", "Running", "OK", "Error"};
 
 void FilesView::Initialize() {
   CreateGrid(0, label_count);
@@ -15,47 +17,23 @@ void FilesView::Initialize() {
 }
 
 void FilesView::UpdateFiles(const std::vector<std::string> &files) {
-  wxGridUpdateLocker lock(this);
-  ClearGrid();
-  AppendRows(files.size());
-  for (int row = 0; row < files.size(); ++row) {
-    SetCellValue(row, 0, files[row]);
-  }
-  AutoSize();
+  wxCriticalSectionLocker lock(m_critical_section);
+  
+  for (const auto &file : files)
+    m_table.push_back(file);
 }
+void FilesView::SwapFiles() {
+  using boost::adaptors::indexed;
 
-void FilesView::UpdateStatuses(const std::vector<Status> &statuses) {
   wxGridUpdateLocker lock(this);
-  for (int row = 0; row < statuses.size(); ++row) {
-    switch (statuses[row]) {
-	case WAITING:
-		SetCellValue(row, 1, "Waiting");
-		break;
-	case RUNNING:
-		SetCellValue(row, 1, "Running");
-		break;
-	case OK:
-		SetCellValue(row, 1, "OK");
-		break;
-	default:
-		SetCellValue(row, 1, "Error");
-	}
-  }
+  wxCriticalSectionLocker lock2(m_critical_section);
+  
+  AppendRows(m_table.size());
+  for (const auto &row : m_table | indexed())
+    SetCellValue(row.index(), 0, row.value());
   AutoSize();
 }
 
 void FilesView::UpdateStatus(std::size_t index, Status status) {
-	switch (status) {
-	case WAITING:
-		SetCellValue(index, 1, "Waiting");
-		break;
-	case RUNNING:
-		SetCellValue(index, 1, "Running");
-		break;
-	case OK:
-		SetCellValue(index, 1, "OK");
-		break;
-	default:
-		SetCellValue(index, 1, "Error");
-	}
+  SetCellValue(index, 1, status_labels[status]);
 }

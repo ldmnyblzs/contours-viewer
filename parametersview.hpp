@@ -2,10 +2,12 @@
 #define PARAMETERS_VIEW_HPP
 
 #include <wx/grid.h>
-
-class Parameters;
+#include <wx/thread.h>
+#include "model/parameters.hpp"
 
 class ParametersView final : public wxGrid {
+  wxCriticalSection m_critical_section;
+  std::vector<std::array<wxString, 5>> m_table;
   void Initialize();
 public:
   template <typename... Args>
@@ -14,6 +16,7 @@ public:
     Initialize();
   }
   void Update(const Parameters &parameters);
+  void Swap();
 };
 
 #endif // PARAMETERS_VIEW_HPP

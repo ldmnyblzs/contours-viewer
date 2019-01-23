@@ -3,7 +3,7 @@
 
 #include <array>
 
-#include "parameters.hpp"
+#include "model/parameters.hpp"
 
 class wxSpinCtrl;
 class wxSpinCtrlDouble;

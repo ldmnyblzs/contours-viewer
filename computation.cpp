@@ -4,6 +4,8 @@
 #include <tbb/combinable.h>
 #include <tbb/parallel_for.h>
 
+#include <shape/encode_graph.hpp>
+
 #include "subrangegraph.hpp"
 
 struct ArcAndVertex {
@@ -183,6 +185,9 @@ bool Computation::run(const Parameters &parameters) {
               level_graph.get_SU(m_mesh.surface_area() * area_ratio.get<1>());
 
           auto reeb_graph = level_graph.minor();
+	  auto labels = get(&ReebGraph::VertexProperty::label, reeb_graph.graph);
+	  shape::reeb_encode(reeb_graph.graph, reeb_graph.index_map(), labels);
+	  std::cout << shape::encode(reeb_graph.graph, labels) << '\n';
 
           if (centers.size() == 1) { // won't be aggregated, might be rendered
             m_level_graphs.push_back(level_graph);

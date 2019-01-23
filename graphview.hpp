@@ -2,19 +2,19 @@
 #define GRAPHVIEW_HPP
 
 #include <vtkSmartPointer.h>
+#include <vtkDirectedGraph.h>
+#include <vtkGraphLayoutView.h>
 
 #include "wxVTKWidget.hpp"
-#include "reebgraph.hpp"
+//#include "reebgraph.hpp"
 
-class vtkGraphLayout;
-class vtkGraphLayoutView;
+#include "model/primitives.hpp"
 
 class GraphView final : public wxVTKWidget {
-  vtkSmartPointer<vtkGraphLayout> m_layout;
-  vtkSmartPointer<vtkGraphLayoutView> m_view;
+  wxCriticalSection m_critical_section;
+  vtkNew<vtkGraphLayoutView> m_view;
+  vtkNew<vtkDirectedGraph> m_preparedGraph, m_displayedGraph;
   void Initialize();
-	template <typename Map, typename Adjacent>
-  int Layout(const ReebGraph::vertex root, Map &columns, Adjacent adjacent, const int column = 0);
 public:
   template <typename... Args>
   explicit GraphView(Args&&... args) :
@@ -22,7 +22,8 @@ public:
     Initialize();
   }
 
-  void UpdateGraph(const ReebGraph &graph);
+  void UpdateGraph(const Graph &reeb);
+  void Swap();
 };
 
 #endif // GRAPHVIEW_HPP

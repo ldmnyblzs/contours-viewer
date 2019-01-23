@@ -1,6 +1,7 @@
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
 #include <wx/filedlg.h>
+#include <wx/msgdlg.h>
 #endif
 
 #include <wx/aui/aui.h>
@@ -13,6 +14,8 @@
 #include "meshview.hpp"
 #include "graphview.hpp"
 #include "outputview.hpp"
+#include "model/execute.hpp"
+#include "model/ratios.hpp"
 
 wxDEFINE_EVENT(wxEVT_SINGLEFILE_LOADED, wxThreadEvent);
 wxDEFINE_EVENT(wxEVT_SINGLEFILE_COMPUTED, wxThreadEvent);
@@ -60,18 +63,12 @@ void SingleFile::Initialize() {
 
   if (CreateThread(wxTHREAD_JOINABLE) == wxTHREAD_NO_ERROR)
     GetThread()->Run();
+
+  m_queue.Post({LOAD, std::nullopt});
 }
 
 void SingleFile::Compute() {
-  m_parameters = m_input_form->GetParameters();
-  m_output_view->UpdateParameters(m_parameters);
-
-  m_manager.GetPane(m_output_view).MinSize(m_output_view->GetBestSize());
-  m_manager.Update();
-  
-  wxMutexLocker mutex_lock(m_run_mutex);
-  m_run_condition.Signal();
-  
+  m_queue.Post({RUN, m_input_form->GetParameters()});
   SetRunning();
 }
 
@@ -81,26 +78,26 @@ void SingleFile::Cancel() {
 }
 
 void SingleFile::Save() {
-	wxFileDialog dialog(this, "Save", "", "", "PNG image (*.png)|*.png", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+  wxFileDialog dialog(this, "Save", "", "", "PNG image (*.png)|*.png", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	
-	if (dialog.ShowModal() == wxID_CANCEL)
-		return;
+  if (dialog.ShowModal() == wxID_CANCEL)
+    return;
 	
-	const auto output = m_output_view->Screenshot();
-	const auto mesh = m_mesh_view->Screenshot();
-	const auto graph = m_graph_view->Screenshot();
+  const auto output = m_output_view->Screenshot();
+  const auto mesh = m_mesh_view->Screenshot();
+  const auto graph = m_graph_view->Screenshot();
 	
-	const auto width = output.Width() + mesh.Width() + graph.Width();
-	const auto height = std::max(std::max(output.Height(), mesh.Height()), graph.Height());
+  const auto width = output.Width() + mesh.Width() + graph.Width();
+  const auto height = std::max(std::max(output.Height(), mesh.Height()), graph.Height());
   
-	GD::Image image(width, height, true);
-	image.Fill(0, 0, GD::TrueColor(255, 255, 255).Int());
-	image.Copy(output, 0, 0, 0, 0, output.Width(), output.Height());
-	image.Copy(mesh, output.Width(), 0, 0, 0, mesh.Width(), mesh.Height());
-	image.Copy(graph, output.Width() + mesh.Width(), 0, 0, 0, graph.Width(), graph.Height());
-	wxFileOutputStream file_stream(dialog.GetPath());
-	wxStdOutputStream std_stream(file_stream);
-	image.Png(std_stream, -1);
+  GD::Image image(width, height, true);
+  image.Fill(0, 0, GD::TrueColor(255, 255, 255).Int());
+  image.Copy(output, 0, 0, 0, 0, output.Width(), output.Height());
+  image.Copy(mesh, output.Width(), 0, 0, 0, mesh.Width(), mesh.Height());
+  image.Copy(graph, output.Width() + mesh.Width(), 0, 0, 0, graph.Width(), graph.Height());
+  wxFileOutputStream file_stream(dialog.GetPath());
+  wxStdOutputStream std_stream(file_stream);
+  image.Png(std_stream, -1);
 }
 
 bool SingleFile::Cancelled() const {
@@ -108,33 +105,37 @@ bool SingleFile::Cancelled() const {
 }
 
 wxThread::ExitCode SingleFile::Entry() {
-  wxMutexLocker mutex_lock(m_run_mutex);
-
-  {
-    wxCriticalSectionLocker lock(m_model_cs);
-    wxFileStream fileStream(m_fileName);
-    wxStdInputStream stream(fileStream);
-    Mesh mesh(stream);
-    mesh.measure();
-    m_computation = std::make_unique<Computation>(std::move(mesh), std::bind(&SingleFile::Cancelled, this));
-    wxQueueEvent(GetEventHandler(), new wxThreadEvent(wxEVT_SINGLEFILE_LOADED));
-  }
-
-  while (!GetThread()->TestDestroy()) {
-    if (m_run_condition.WaitTimeout(100) == wxCOND_NO_ERROR) {
-      wxCriticalSectionLocker lock(m_model_cs);
-      m_cancelled = false;
-      if (m_computation->run(m_parameters))
-		  wxQueueEvent(GetEventHandler(), new wxThreadEvent(wxEVT_SINGLEFILE_COMPUTED));
+  Mesh mesh;
+  double area = 0.0, volume = 0.0;
+  std::pair<Event, std::optional<Parameters> > event;
+  while (m_queue.Receive(event) == wxMSGQUEUE_NO_ERROR) {
+    switch (event.first) {
+    case LOAD: {
+      load_mesh(m_fileName, mesh);
+      const auto properties = mesh_properties(mesh);
+      const auto ratios = calculate_ratios(properties);
+      area = properties[0];
+      volume = properties[1];
+      m_output_view->UpdateMeshData(properties);
+      m_output_view->UpdateRatios(ratios);
+      m_mesh_view->PrepareMesh(mesh);
+      wxQueueEvent(GetEventHandler(), new wxThreadEvent(wxEVT_SINGLEFILE_LOADED));
+      break;
+    }
+    case RUN:
+      execute(m_fileName, mesh, area, volume, *(event.second), *this);
+      wxQueueEvent(GetEventHandler(), new wxThreadEvent(wxEVT_SINGLEFILE_COMPUTED));
+      break;
+    case EXIT:
+      return wxThread::ExitCode(0);
     }
   }
   return wxThread::ExitCode(0);
 }
 
 void SingleFile::OnLoaded(wxThreadEvent & WXUNUSED(event)) {
-  wxCriticalSectionLocker lock(m_model_cs);
-  m_mesh_view->UpdateMesh(m_computation->mesh());
-  m_output_view->UpdateMeshData(m_computation->mesh());
+  m_mesh_view->SwapMesh();
+  m_output_view->Swap();
 
   m_manager.GetPane(m_output_view).MinSize(m_output_view->GetBestSize());
   m_manager.Update();
@@ -143,10 +144,9 @@ void SingleFile::OnLoaded(wxThreadEvent & WXUNUSED(event)) {
 }
 
 void SingleFile::OnComputed(wxThreadEvent & WXUNUSED(event)) {
-  wxCriticalSectionLocker lock(m_model_cs);
-  m_mesh_view->UpdateTexture(m_computation->level_graphs()[0]);
-  m_graph_view->UpdateGraph(m_computation->reeb_graphs()[0]);
-  m_output_view->UpdateSU(m_computation->su()[0]);
+  m_mesh_view->SwapArcs();
+  m_graph_view->Swap();
+  m_output_view->Swap();
   
   m_manager.GetPane(m_output_view).MinSize(m_output_view->GetBestSize());
   m_manager.Update();
@@ -156,7 +156,51 @@ void SingleFile::OnComputed(wxThreadEvent & WXUNUSED(event)) {
 
 bool SingleFile::Destroy() {
   Cancel();
+  m_queue.Post({EXIT, std::nullopt});
   GetThread()->Delete(nullptr, wxTHREAD_WAIT_BLOCK);
   m_manager.UnInit();
   return wxWindow::Destroy();
+}
+
+/*void SingleFile::mesh_properties(const std::string &filename,
+				 double area,
+				 double volume) {
+  m_output_view->UpdateMeshData(area, volume);
+  }*/
+void SingleFile::level_graph(const std::string &filename,
+			     const CenterSphereGenerator &center_sphere,
+			     int level_count,
+			     const Graph &graph,
+			     const std::vector<GraphEdge> &stable_edges,
+			     const std::vector<GraphEdge> &unstable_edges){
+  m_mesh_view->PrepareArcs(graph, stable_edges, unstable_edges);
+}
+void SingleFile::su(const std::string &filename,
+		    const CenterSphereGenerator &center_sphere,
+		    int level_count,
+		    double area_ratio,
+		    Aggregation aggregation,
+		    std::pair<float, float> &su) {
+  m_output_view->UpdateParameters(center_sphere.offset,
+				  level_count,
+				  area_ratio);
+  m_output_view->UpdateSU(static_cast<int>(su.first), static_cast<int>(su.second));
+}
+void SingleFile::reeb(const std::string &filename,
+		      const CenterSphereGenerator &center_sphere,
+		      int level_count,
+		      double area_ratio,
+		      Aggregation aggregation,
+		      const Graph &graph,
+		      const std::string &code) {
+  m_graph_view->UpdateGraph(graph);
+  m_output_view->UpdateReeb(code);
+}
+void SingleFile::morse(const std::string &filename,
+		       const CenterSphereGenerator &center_sphere,
+		       int level_count,
+		       double area_ratio,
+		       Aggregation aggregation,
+		       const std::string &code) {
+  m_output_view->UpdateMorse(code);
 }

@@ -6,15 +6,17 @@
 
 class ReebGraph
 {
+public:
 	struct VertexProperty {
 		float level;
+	  int label;
 	};
 public:
     typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, VertexProperty> adjacency_list;
     typedef boost::graph_traits<adjacency_list>::vertex_descriptor vertex;
     typedef boost::graph_traits<adjacency_list>::edge_descriptor edge;
     typedef typename adjacency_list::vertices_size_type size_type;
-private:
+  //private:
     adjacency_list graph;
 public:
     ReebGraph(size_type vertex_count);
