@@ -8,6 +8,7 @@
 #include "filesview.hpp"
 #include "model/execute.hpp"
 #include "parametersview.hpp"
+#include <tbb/parallel_for_each.h>
 
 wxDEFINE_EVENT(wxEVT_BATCHFILE_LOADED, wxThreadEvent);
 wxDEFINE_EVENT(wxEVT_BATCHFILE_STATUS_CHANGED, wxThreadEvent);
@@ -77,25 +78,34 @@ wxThread::ExitCode BatchFile::Entry() {
       load_batch_file(m_fileName, parameters, files);
       m_parameters_view->Update(parameters);
       m_files_view->UpdateFiles(files);
-      wxQueueEvent(GetEventHandler(), new wxThreadEvent(wxEVT_BATCHFILE_LOADED));
+      m_results.reserve(files.size());
+      for (const auto &file : files)
+        m_results[file];
+      wxQueueEvent(GetEventHandler(),
+                   new wxThreadEvent(wxEVT_BATCHFILE_LOADED));
       break;
     case RUN:
       for (const auto &index : irange(0ul, files.size()))
         set_status(index, STATUS_WAITING);
-      for (const auto &file : files | indexed()) {
+      tbb::parallel_for_each(files | indexed(), [&](const auto &file) {
         set_status(file.index(), STATUS_RUNNING);
         try {
-	  Mesh mesh;
-	  load_mesh(file.value(), mesh, directory);
-	  const auto properties = mesh_properties(mesh);
-          execute(file.value(), mesh, properties[0], properties[1], parameters, *this);
+          Mesh mesh;
+          load_mesh(file.value(), mesh, directory);
+          const auto properties = mesh_properties(mesh);
+          execute(file.value(), mesh, properties[0], properties[1], parameters,
+                  *this);
           set_status(file.index(), STATUS_OK);
+        } catch (const std::exception& e) {
+	  std::cout << e.what() << std::endl;
+          set_status(file.index(), STATUS_ERROR);
         } catch (...) {
+	  std::cout << "wtf" << std::endl;
           set_status(file.index(), STATUS_ERROR);
         }
-      }
+      });
       break;
-    case SAVE:      
+    case SAVE:
       save_batch_file(m_fileName, event.second, m_results);
       break;
     case EXIT:
@@ -124,52 +134,31 @@ bool BatchFile::Destroy() {
   return wxWindow::Destroy();
 }
 
-/*void BatchFile::mesh_properties(const std::string &filename, double area,
-                                double volume) {
-  m_results[filename].area = area;
-  m_results[filename].volume = volume;
-  }*/
-
 void BatchFile::su(const std::string &filename,
-		   const CenterSphereGenerator &center_sphere,
-		   int level_count,
-		   double area_ratio,
-		   Aggregation aggregation,
-		   std::pair<float, float> &su) {
-  const ParameterSignature signature(center_sphere.ratio,
-				     center_sphere.count,
-				     level_count,
-				     area_ratio,
-				     aggregation);
-  m_results[filename].surm[signature].stable = su.first;
-  m_results[filename].surm[signature].unstable = su.second;
+                   const CenterSphereGenerator &center_sphere, int level_count,
+                   double area_ratio, Aggregation aggregation,
+                   std::pair<float, float> &su) {
+  const ParameterSignature signature(center_sphere.ratio, center_sphere.count,
+                                     level_count, area_ratio, aggregation);
+  m_results.at(filename).surm[signature].stable = su.first;
+  m_results.at(filename).surm[signature].unstable = su.second;
 }
 
 void BatchFile::reeb(const std::string &filename,
-		     const CenterSphereGenerator &center_sphere,
-		     int level_count,
-		     double area_ratio,
-		     Aggregation aggregation,
-		     const Graph &graph,
-		     const std::string &code) {
-  const ParameterSignature signature(center_sphere.ratio,
-				     center_sphere.count,
-				     level_count,
-				     area_ratio,
-				     aggregation);
-  m_results[filename].surm[signature].reeb = code;
+                     const CenterSphereGenerator &center_sphere,
+                     int level_count, double area_ratio,
+                     Aggregation aggregation, const Graph &graph,
+                     const std::string &code) {
+  const ParameterSignature signature(center_sphere.ratio, center_sphere.count,
+                                     level_count, area_ratio, aggregation);
+  m_results.at(filename).surm[signature].reeb = code;
 }
 
 void BatchFile::morse(const std::string &filename,
-		      const CenterSphereGenerator &center_sphere,
-		      int level_count,
-		      double area_ratio,
-		      Aggregation aggregation,
-		      const std::string &code) {
-  const ParameterSignature signature(center_sphere.ratio,
-				     center_sphere.count,
-				     level_count,
-				     area_ratio,
-				     aggregation);
-  m_results[filename].surm[signature].morse = code;
+                      const CenterSphereGenerator &center_sphere,
+                      int level_count, double area_ratio,
+                      Aggregation aggregation, const std::string &code) {
+  const ParameterSignature signature(center_sphere.ratio, center_sphere.count,
+                                     level_count, area_ratio, aggregation);
+  m_results.at(filename).surm[signature].morse = code;
 }

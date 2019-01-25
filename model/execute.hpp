@@ -39,10 +39,6 @@ void execute(const std::string &filename,
   using namespace boost;
   using namespace boost::adaptors;
 
-  //const auto area = shape::surface_area(mesh, mesh.points());
-  //const auto volume = shape::volume(mesh, mesh.points(), Point(CGAL::ORIGIN));
-  //saver.mesh_properties(filename, area, volume);
-
   for (const auto &center_sphere : center_spheres | indexed()) {
     const auto centers = center_sphere.value().value(volume);
 
@@ -58,11 +54,11 @@ void execute(const std::string &filename,
       const auto min_distance =
 	shape::min_distance(mesh, mesh.points(), center.value());
       const auto max_distance =
-	shape::max_distance(mesh, mesh.points(), center.value());
+	shape::max_distance(mesh, mesh.points(), center.value()) + 0.0001;
 
       for (const auto &level_count : center_sphere.value().next | indexed()) {
         const auto step =
-            (max_distance - min_distance) / level_count.value().value;
+	  (max_distance - min_distance) / (level_count.value().value + 1);
 	std::vector<std::map<int, std::pair<Point, Point>>> h_i(mesh.num_halfedges());
 	auto halfedge_intersections = boost::make_iterator_property_map(h_i.begin(), CGAL::get(boost::halfedge_index, mesh));
         shape::intersect_halfedges(mesh, mesh.points(), center.value(), min_distance,

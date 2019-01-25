@@ -45,6 +45,13 @@ static double stod_coma(const std::string &string) {
   return d;
 }
 
+static std::string to_string_coma(const double number) {
+  std::ostringstream stream;
+  stream.imbue(std::locale(stream.getloc(), new decimal_coma));
+  stream << number;
+  return stream.str();
+}
+
 void load_batch_file(const std::string &batch_file, Parameters &parameters,
                      std::vector<std::string> &files) {
   const auto table = parse_csv(batch_file);
@@ -176,38 +183,34 @@ void save_batch_file(const std::string &original_file,
       table.at(row).at(column_count + 15 + 5 * index) = "Morse"s;
     }
     row++;
-
-    for (const auto &s : signatures) {
-      std::cout << std::get<0>(s) << ' '
-		<< std::get<1>(s) << ' '
-		<< std::get<2>(s) << ' '
-		<< std::get<3>(s) << ' '
-		<< std::get<4>(s) << std::endl;
-    }
     
     // files
     for (; row < table.size(); ++row) {
       table.at(row).resize(width);
-      const auto result = results.at(table.at(row).at(1));
-      table.at(row).at(column_count + 1) = std::to_string(result.area);
-      table.at(row).at(column_count + 2) = std::to_string(result.volume);
-      table.at(row).at(column_count + 3) = std::to_string(result.a);
-      table.at(row).at(column_count + 4) = std::to_string(result.b);
-      table.at(row).at(column_count + 5) = std::to_string(result.c);
-      table.at(row).at(column_count + 6) = std::to_string(result.proj_circumference);
-      table.at(row).at(column_count + 7) = std::to_string(result.proj_area);
+      const auto result = results.find(table.at(row).at(1));
+      if (result != results.end()) {
+	const auto &data = result->second;
+	table.at(row).at(column_count + 1) = to_string_coma(data.area);
+	table.at(row).at(column_count + 2) = to_string_coma(data.volume);
+	table.at(row).at(column_count + 3) = to_string_coma(data.a);
+	table.at(row).at(column_count + 4) = to_string_coma(data.b);
+	table.at(row).at(column_count + 5) = to_string_coma(data.c);
+	table.at(row).at(column_count + 6) = to_string_coma(data.proj_circumference);
+	table.at(row).at(column_count + 7) = to_string_coma(data.proj_area);
       
-      for (const auto &s : signatures | indexed()) {
-	std::cout << std::get<0>(s.value()) << ' '
-		  << std::get<1>(s.value()) << ' '
-		  << std::get<2>(s.value()) << ' '
-		  << std::get<3>(s.value()) << ' '
-		  << std::get<4>(s.value()) << std::endl;
-	const auto surm = result.surm.at(s.value());
-	table.at(row).at(column_count + 12 + 5 * s.index()) = std::to_string(surm.stable);
-	table.at(row).at(column_count + 13 + 5 * s.index()) = std::to_string(surm.unstable);
-	table.at(row).at(column_count + 14 + 5 * s.index()) = surm.reeb;
-	table.at(row).at(column_count + 15 + 5 * s.index()) = surm.morse;
+	for (const auto &s : signatures | indexed()) {
+	  const auto surm = data.surm.find(s.value());
+	  if (surm != data.surm.end()) {
+	    table.at(row).at(column_count + 12 + 5 * s.index()) = std::to_string(surm->second.stable);
+	    table.at(row).at(column_count + 13 + 5 * s.index()) = std::to_string(surm->second.unstable);
+	    table.at(row).at(column_count + 14 + 5 * s.index()) = surm->second.reeb;
+	    table.at(row).at(column_count + 15 + 5 * s.index()) = surm->second.morse;
+	  } else {
+	    table.at(row).at(column_count + 12 + 5 * s.index()) = "error"s;
+	  }
+	}
+      } else {
+	table.at(row).at(column_count + 1) = "error"s;
       }
     }
   } catch (const std::out_of_range &oor) {
