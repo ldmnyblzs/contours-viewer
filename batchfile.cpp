@@ -12,6 +12,7 @@
 #include <tbb/parallel_for_each.h>
 
 wxDEFINE_EVENT(wxEVT_BATCHFILE_LOADED, wxThreadEvent);
+wxDEFINE_EVENT(wxEVT_BATCHFILE_COMPUTED, wxThreadEvent);
 wxDEFINE_EVENT(wxEVT_BATCHFILE_STATUS_CHANGED, wxThreadEvent);
 
 void BatchFile::Initialize() {
@@ -24,6 +25,7 @@ void BatchFile::Initialize() {
   SetSizerAndFit(sizer);
 
   Bind(wxEVT_BATCHFILE_LOADED, &BatchFile::OnLoaded, this);
+  Bind(wxEVT_BATCHFILE_COMPUTED, &BatchFile::OnComputed, this);
   Bind(wxEVT_BATCHFILE_STATUS_CHANGED, &BatchFile::OnStatusChanged, this);
 
   if (CreateThread(wxTHREAD_JOINABLE) == wxTHREAD_NO_ERROR)
@@ -113,6 +115,8 @@ wxThread::ExitCode BatchFile::Entry() {
           set_status(file.index(), STATUS_ERROR);
         }
       });
+      wxQueueEvent(GetEventHandler(),
+                   new wxThreadEvent(wxEVT_BATCHFILE_COMPUTED));
       break;
     case SAVE:
       save_batch_file(m_fileName, event.second, m_results);
@@ -127,6 +131,11 @@ wxThread::ExitCode BatchFile::Entry() {
 void BatchFile::OnLoaded(wxThreadEvent &WXUNUSED(event)) {
   m_parameters_view->Swap();
   m_files_view->SwapFiles();
+  GetSizer()->Layout();
+  SetRunning(false);
+}
+
+void BatchFile::OnComputed(wxThreadEvent &WXUNUSED(event)) {
   GetSizer()->Layout();
   SetRunning(false);
 }

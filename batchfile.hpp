@@ -12,6 +12,7 @@ class FilesView;
 class wxAuiNotebookEvent;
 
 wxDECLARE_EVENT(wxEVT_BATCHFILE_LOADED, wxThreadEvent);
+wxDECLARE_EVENT(wxEVT_BATCHFILE_COMPUTED, wxThreadEvent);
 wxDECLARE_EVENT(wxEVT_BATCHFILE_STATUS_CHANGED, wxThreadEvent);
 
 class BatchFile final : public wxWindow, public wxThreadHelper, public Computable {
@@ -36,6 +37,7 @@ class BatchFile final : public wxWindow, public wxThreadHelper, public Computabl
   void Initialize();
   wxThread::ExitCode Entry() final;
   void OnLoaded(wxThreadEvent &event);
+  void OnComputed(wxThreadEvent &event);
   void OnStatusChanged(wxThreadEvent &event);
   bool Cancelled() const;
 public:
