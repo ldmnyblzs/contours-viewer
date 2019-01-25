@@ -7,6 +7,7 @@
 #include "batchfile.hpp"
 #include "filesview.hpp"
 #include "model/execute.hpp"
+#include "model/ratios.hpp"
 #include "parametersview.hpp"
 #include <tbb/parallel_for_each.h>
 
@@ -93,6 +94,14 @@ wxThread::ExitCode BatchFile::Entry() {
           Mesh mesh;
           load_mesh(file.value(), mesh, directory);
           const auto properties = mesh_properties(mesh);
+	  m_results.at(file.value()).area = properties[0];
+	  m_results.at(file.value()).volume = properties[1];
+	  m_results.at(file.value()).a = properties[2];
+	  m_results.at(file.value()).b = properties[3];
+	  m_results.at(file.value()).c = properties[4];
+	  m_results.at(file.value()).proj_circumference = properties[5];
+	  m_results.at(file.value()).proj_area = properties[6];
+	  m_results.at(file.value()).ratios = calculate_ratios(properties);
           execute(file.value(), mesh, properties[0], properties[1], parameters,
                   *this);
           set_status(file.index(), STATUS_OK);

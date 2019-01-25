@@ -11,6 +11,8 @@ parse_csv(const std::string &file) {
   const boost::escaped_list_separator<char> separator('\\', ';', '\"');
 
   for (std::getline(input, line); input; std::getline(input, line)) {
+    if (!line.empty() && line[line.size() - 1] == '\r')
+      line.pop_back();
     boost::tokenizer<boost::escaped_list_separator<char>> tokenizer(line,
                                                                     separator);
     table.emplace_back(tokenizer.begin(), tokenizer.end());
@@ -156,13 +158,13 @@ void save_batch_file(const std::string &original_file,
 	   !table.at(row + 2).at(column_count).empty();
          ++column_count)
       ;
-    // column count + empty column + 11 mesh properties + (empty column + 4 results) * parameter count
-    const auto width = column_count + 12 + 5 * signatures.size();
+    // column count + empty column + 13 mesh properties + (empty column + 4 results) * parameter count
+    const auto width = column_count + 14 + 5 * signatures.size();
     row++; // skip empty row
 
     table.at(row).resize(width);
     for (const auto index : irange(0ul, signatures.size()))
-      table.at(row).at(column_count + 12 + 5 * index) = std::to_string(index);
+      table.at(row).at(column_count + 15 + 5 * index) = std::to_string(index + 1);
     row++;
     table.at(row).resize(width);
     table.at(row).at(column_count + 1) = "A"s;
@@ -176,11 +178,13 @@ void save_batch_file(const std::string &original_file,
     table.at(row).at(column_count + 9) = "b/a"s;
     table.at(row).at(column_count + 10) = "Ibody"s;
     table.at(row).at(column_count + 11) = "Iproj"s;
+    table.at(row).at(column_count + 12) = "Iellipsoid"s;
+    table.at(row).at(column_count + 13) = "Iellipse"s;    
     for (const auto index : irange(0ul, signatures.size())) {
-      table.at(row).at(column_count + 12 + 5 * index) = "S"s;
-      table.at(row).at(column_count + 13 + 5 * index) = "U"s;
-      table.at(row).at(column_count + 14 + 5 * index) = "Reeb"s;
-      table.at(row).at(column_count + 15 + 5 * index) = "Morse"s;
+      table.at(row).at(column_count + 15 + 5 * index) = "S"s;
+      table.at(row).at(column_count + 16 + 5 * index) = "U"s;
+      table.at(row).at(column_count + 17 + 5 * index) = "Reeb"s;
+      table.at(row).at(column_count + 18 + 5 * index) = "Morse"s;
     }
     row++;
     
@@ -197,16 +201,18 @@ void save_batch_file(const std::string &original_file,
 	table.at(row).at(column_count + 5) = to_string_coma(data.c);
 	table.at(row).at(column_count + 6) = to_string_coma(data.proj_circumference);
 	table.at(row).at(column_count + 7) = to_string_coma(data.proj_area);
-      
+	for (const auto &r : data.ratios | indexed()) {
+	  table.at(row).at(column_count + 8 + r.index()) = to_string_coma(r.value());
+	}
 	for (const auto &s : signatures | indexed()) {
 	  const auto surm = data.surm.find(s.value());
 	  if (surm != data.surm.end()) {
-	    table.at(row).at(column_count + 12 + 5 * s.index()) = std::to_string(surm->second.stable);
-	    table.at(row).at(column_count + 13 + 5 * s.index()) = std::to_string(surm->second.unstable);
-	    table.at(row).at(column_count + 14 + 5 * s.index()) = surm->second.reeb;
-	    table.at(row).at(column_count + 15 + 5 * s.index()) = surm->second.morse;
+	    table.at(row).at(column_count + 15 + 5 * s.index()) = std::to_string(surm->second.stable);
+	    table.at(row).at(column_count + 16 + 5 * s.index()) = std::to_string(surm->second.unstable);
+	    table.at(row).at(column_count + 17 + 5 * s.index()) = "R"s + surm->second.reeb;
+	    table.at(row).at(column_count + 18 + 5 * s.index()) = "M"s + surm->second.morse;
 	  } else {
-	    table.at(row).at(column_count + 12 + 5 * s.index()) = "error"s;
+	    table.at(row).at(column_count + 15 + 5 * s.index()) = "error"s;
 	  }
 	}
       } else {

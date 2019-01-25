@@ -23,6 +23,7 @@ struct FileResults {
   double area, volume;
   double a, b, c;
   double proj_circumference, proj_area;
+  std::array<double, 6> ratios;
   std::map<ParameterSignature, SURM> surm;
 };
 using Results = std::unordered_map<std::string, FileResults>;
