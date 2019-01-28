@@ -163,7 +163,7 @@ void save_batch_file(const std::string &original_file,
     row++; // skip empty row
 
     table.at(row).resize(width);
-    for (const auto index : irange(0ul, signatures.size()))
+    for (const auto index : irange<typename std::vector<ParameterSignature>::size_type>(0, signatures.size()))
       table.at(row).at(column_count + 15 + 5 * index) = std::to_string(index + 1);
     row++;
     table.at(row).resize(width);
@@ -180,7 +180,7 @@ void save_batch_file(const std::string &original_file,
     table.at(row).at(column_count + 11) = "Iproj"s;
     table.at(row).at(column_count + 12) = "Iellipsoid"s;
     table.at(row).at(column_count + 13) = "Iellipse"s;    
-    for (const auto index : irange(0ul, signatures.size())) {
+    for (const auto index : irange<typename std::vector<ParameterSignature>::size_type>(0, signatures.size())) {
       table.at(row).at(column_count + 15 + 5 * index) = "S"s;
       table.at(row).at(column_count + 16 + 5 * index) = "U"s;
       table.at(row).at(column_count + 17 + 5 * index) = "Reeb"s;

@@ -36,12 +36,12 @@ struct VertexProperty {
   int label;
 };
 
-struct Arc {
+struct AArc {
   Point center;
   Point source;
   Point target;
   Vector normal;
-  Arc(Point center, Point source, Point target, Vector normal) :
+  AArc(Point center, Point source, Point target, Vector normal) :
     center(std::move(center)),
     source(std::move(source)),
     target(std::move(target)),
@@ -53,7 +53,7 @@ struct EdgeProperty {
   double area_inside = 0.0, area_outside = 0.0;
   boost::container::flat_set<GraphVertex> roots_inside, roots_outside;
   int level = 0;
-  std::list<Arc> arcs;
+  std::list<AArc> arcs;
 };
 
 #endif // MODEL_PRIMITIVES_HPP

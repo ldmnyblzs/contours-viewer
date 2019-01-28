@@ -13,9 +13,8 @@ find_package(wxWidgets REQUIRED core base gl aui adv)
 include(${wxWidgets_USE_FILE})
 find_package(VTK REQUIRED vtkRenderingOpenGL2 vtkRenderingAnnotation vtkInteractionStyle vtkInfovisLayout vtkViewsInfovis)
 include(${VTK_USE_FILE})
-find_package(TBB REQUIRED)
+find_package(TBB CONFIG REQUIRED)
 find_package(CGAL REQUIRED Core)
-
 find_package(GD REQUIRED)
 include_directories(${GD_INCLUDE_DIRS})
 
@@ -39,15 +38,18 @@ add_dependencies(shape libshape)
 include_directories(${install_dir}/include)
 link_directories(${install_dir}/lib)
 
-target_link_libraries(tr PRIVATE Boost::filesystem Boost::iostreams ${VTK_LIBRARIES} ${wxWidgets_LIBRARIES} CGAL::CGAL CGAL::CGAL_Core tbb ${GD_LIBRARIES} ${install_dir}/lib/libbliss.a shape)
+#target_link_libraries(tr PRIVATE Boost::filesystem Boost::iostreams ${VTK_LIBRARIES} ${wxWidgets_LIBRARIES} CGAL::CGAL CGAL::CGAL_Core tbb ${GD_LIBRARIES} ${install_dir}/lib/libbliss.a shape)
+target_link_libraries(tr PRIVATE Boost::filesystem Boost::iostreams ${VTK_LIBRARIES} ${wxWidgets_LIBRARIES} CGAL::CGAL CGAL::CGAL_Core ${GD_LIBRARIES} TBB::tbb ${install_dir}/lib/bliss.lib shape)
 #cotire(tr)
 
 install(TARGETS tr RUNTIME DESTINATION .)
 install(CODE
 "
 	include(BundleUtilities)
-	fixup_bundle(\"\$\{CMAKE_INSTALL_PREFIX\}/tr.exe\" \"\" \"\")
+	fixup_bundle(\"\$\{CMAKE_INSTALL_PREFIX\}/tr.exe\" \"\" \"\" IGNORE_ITEM \"opengl32.dll\")
 "
 DESTINATION .)
 
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
+include(InstallRequiredSystemLibraries)
 include(CPack)

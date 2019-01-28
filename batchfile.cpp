@@ -88,7 +88,7 @@ wxThread::ExitCode BatchFile::Entry() {
                    new wxThreadEvent(wxEVT_BATCHFILE_LOADED));
       break;
     case RUN:
-      for (const auto &index : irange(0ul, files.size()))
+      for (const auto &index : irange<typename std::vector<std::string>::size_type>(0ul, files.size()))
         set_status(index, STATUS_WAITING);
       tbb::parallel_for_each(files | indexed(), [&](const auto &file) {
         set_status(file.index(), STATUS_RUNNING);
