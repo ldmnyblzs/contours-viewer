@@ -4,7 +4,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 set (CMAKE_CXX_STANDARD 17)
 
 #include(cotire)
-include(ExternalProject)
+#include(ExternalProject)
 
 project(tr)
 
@@ -17,6 +17,8 @@ find_package(TBB CONFIG REQUIRED)
 find_package(CGAL REQUIRED Core)
 find_package(GD REQUIRED)
 include_directories(${GD_INCLUDE_DIRS})
+find_package(bliss REQUIRED)
+find_package(shape REQUIRED)
 
 #add_executable(tr WIN32 parameters.cpp mesh.cpp levelgraph.cpp subrangegraph.cpp reebgraph.cpp ratios.cpp computation.cpp window.cpp singlefile.cpp inputform.cpp meshview.cpp graphview.cpp outputview.cpp wxVTKWidget.cpp batch.cpp batchfile.cpp parametersview.cpp filesview.cpp)
 add_executable(tr WIN32 window.cpp singlefile.cpp inputform.cpp meshview.cpp graphview.cpp outputview.cpp wxVTKWidget.cpp batchfile.cpp parametersview.cpp filesview.cpp model/batch.cpp model/execute.cpp model/ratios.cpp)
@@ -25,21 +27,8 @@ target_compile_definitions(tr PRIVATE NOMINMAX)
 target_compile_definitions(tr PRIVATE _CRT_SECURE_NO_WARNINGS)
 target_compile_definitions(tr PRIVATE HAVE_LIBPNG)
 
-ExternalProject_Add(libshape
-  GIT_REPOSITORY https://github.com/ldmnyblzs/libshape.git
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/external/shape
-  PREFIX ${CMAKE_BINARY_DIR}/external/shape
-  )
-ExternalProject_Get_Property(libshape install_dir)
-#add_library(bliss STATIC IMPORTED)
-#add_dependencies(bliss libshape)
-add_library(shape INTERFACE IMPORTED)
-add_dependencies(shape libshape)
-include_directories(${install_dir}/include)
-link_directories(${install_dir}/lib)
-
 #target_link_libraries(tr PRIVATE Boost::filesystem Boost::iostreams ${VTK_LIBRARIES} ${wxWidgets_LIBRARIES} CGAL::CGAL CGAL::CGAL_Core tbb ${GD_LIBRARIES} ${install_dir}/lib/libbliss.a shape)
-target_link_libraries(tr PRIVATE Boost::filesystem Boost::iostreams ${VTK_LIBRARIES} ${wxWidgets_LIBRARIES} CGAL::CGAL CGAL::CGAL_Core ${GD_LIBRARIES} TBB::tbb ${install_dir}/lib/bliss.lib shape)
+target_link_libraries(tr PRIVATE Boost::filesystem Boost::iostreams ${VTK_LIBRARIES} ${wxWidgets_LIBRARIES} CGAL::CGAL CGAL::CGAL_Core ${GD_LIBRARIES} TBB::tbb shape)
 #cotire(tr)
 
 install(TARGETS tr RUNTIME DESTINATION .)
