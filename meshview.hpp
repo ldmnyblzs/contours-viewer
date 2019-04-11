@@ -23,8 +23,9 @@ public:
   }
   void PrepareMesh(const Mesh &mesh);
   void PrepareArcs(const Graph &graph,
-                   std::vector<GraphEdge> stable_edges,
-                   std::vector<GraphEdge> unstable_edges);
+		   std::vector<GraphEdge> stable_edges,
+		   std::vector<GraphEdge> unstable_edges,
+		   const std::vector<AArc> &arcs);
   void SwapMesh();
   void SwapArcs();
 };

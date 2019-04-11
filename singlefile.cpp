@@ -172,8 +172,9 @@ void SingleFile::level_graph(const std::string &filename,
 			     int level_count,
 			     const Graph &graph,
 			     const std::vector<GraphEdge> &stable_edges,
-			     const std::vector<GraphEdge> &unstable_edges){
-  m_mesh_view->PrepareArcs(graph, stable_edges, unstable_edges);
+			     const std::vector<GraphEdge> &unstable_edges,
+			     const std::vector<AArc> &arcs){
+  m_mesh_view->PrepareArcs(graph, stable_edges, unstable_edges, arcs);
 }
 void SingleFile::su(const std::string &filename,
 		    const CenterSphereGenerator &center_sphere,

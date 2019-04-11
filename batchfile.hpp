@@ -63,7 +63,8 @@ public:
 		   int level_count,
 		   const Graph &graph,
 		   const std::vector<GraphEdge> &stable_edges,
-		   const std::vector<GraphEdge> &unstable_edges) {};
+		   const std::vector<GraphEdge> &unstable_edges,
+		   const std::vector<AArc> &arcs) {};
   void su(const std::string &filename,
 	  const CenterSphereGenerator &center_sphere,
 	  int level_count,

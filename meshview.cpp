@@ -36,16 +36,24 @@ void MeshView::Initialize() {
   meshActor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0);
 
   vtkNew<vtkLookupTable> contourColors;
-  contourColors->SetNumberOfTableValues(3);
+  contourColors->SetNumberOfTableValues(12);
   contourColors->Build();
-
   contourColors->SetTableValue(0, 0.0, 0.0, 1.0);
   contourColors->SetTableValue(1, 0.0, 1.0, 0.0);
   contourColors->SetTableValue(2, 1.0, 0.0, 0.0);
+  contourColors->SetTableValue(3, 0.0, 0.0, 0.0);
+  contourColors->SetTableValue(4, 1.0, 1.0, 0.0);
+  contourColors->SetTableValue(5, 1.0, 0.0, 1.0);
+  contourColors->SetTableValue(6, 0.0, 1.0, 1.0);
+  contourColors->SetTableValue(7, 1.0, 1.0, 1.0);
+  contourColors->SetTableValue(8, 0.5, 0.5, 0.0);
+  contourColors->SetTableValue(9, 0.5, 0.0, 0.5);
+  contourColors->SetTableValue(10, 1.0, 0.3, 0.3);
+  contourColors->SetTableValue(11, 0.3, 0.3, 0.3);
 
   vtkNew<vtkPolyDataMapper> contourMapper;
   contourMapper->SetInputData(m_displayedArcs.GetPointer());
-  contourMapper->SetScalarRange(0, 2);
+  contourMapper->SetScalarRange(0, 11);
   contourMapper->SetColorModeToMapScalars();
   contourMapper->SetLookupTable(contourColors.GetPointer());
 
@@ -123,7 +131,8 @@ void MeshView::PrepareMesh(const Mesh &mesh) {
 
 void MeshView::PrepareArcs(const Graph &graph,
                            std::vector<GraphEdge> stable_edges,
-                           std::vector<GraphEdge> unstable_edges) {
+                           std::vector<GraphEdge> unstable_edges,
+			   const std::vector<AArc> &arcs) {
   wxCriticalSectionLocker lock(m_critical_section);
   
   using namespace boost;
@@ -133,7 +142,8 @@ void MeshView::PrepareArcs(const Graph &graph,
   
   vtkNew<vtkAppendPolyData> data;
   for (const auto &edge : make_iterator_range(edges(graph))) {
-    for (const auto &arc : graph[edge].arcs) {
+    for (const auto &arc_index : graph[edge].arcs) {
+      const auto arc = arcs[arc_index];
       vtkNew<vtkArcSource> arcSource;
       arcSource->UseNormalAndAngleOn();
       arcSource->SetNormal(arc.normal.x(), arc.normal.y(), arc.normal.z());
@@ -148,7 +158,14 @@ void MeshView::PrepareArcs(const Graph &graph,
       arcSource->Update();
 
       vtkNew<vtkIntArray> color;
-      const int value = binary_search(stable_edges, edge) ? 1 : (binary_search(unstable_edges, edge) ? 2 : 0);
+      int value = 0;
+      if (binary_search(unstable_edges, edge))
+	value = 2;
+      else if (binary_search(stable_edges, edge))
+	value = 1;
+      else if (arc.stable != 0)
+	value = 3 + (arc.stable - 1);
+      
       for (const auto i : irange(0, resolution))
 	color->InsertNextValue(value);
       

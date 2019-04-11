@@ -6,6 +6,8 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/reverse_graph.hpp>
 #include <boost/container/flat_set.hpp>
+#include <optional>
+#include <variant>
 
 using Kernel = CGAL::Simple_cartesian<double>;
 using Point = Kernel::Point_3;
@@ -41,6 +43,10 @@ struct AArc {
   Point source;
   Point target;
   Vector normal;
+  std::vector<std::size_t> prev, next;
+  std::size_t forward = 0;
+  int stable = 0;
+  int unstable = 0;
   AArc(Point center, Point source, Point target, Vector normal) :
     center(std::move(center)),
     source(std::move(source)),
@@ -53,7 +59,19 @@ struct EdgeProperty {
   double area_inside = 0.0, area_outside = 0.0;
   boost::container::flat_set<GraphVertex> roots_inside, roots_outside;
   int level = 0;
-  std::list<AArc> arcs;
+  std::list<std::size_t> arcs;
+  bool reachable_stable = false, reachable_unstable = false, visited = false;
+  std::map<std::pair<int, int>, int*> stable_changes, unstable_changes;
+  std::map<std::pair<int, int>, std::variant<std::vector<std::size_t>, std::size_t> > parts;
 };
+
+
+struct MSVertexProperty {
+  char type;
+};
+
+using MS = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, MSVertexProperty>;
+using MS_vertex = typename boost::graph_traits<MS>::vertex_descriptor;
+using MS_edge = typename boost::graph_traits<MS>::edge_descriptor;
 
 #endif // MODEL_PRIMITIVES_HPP
