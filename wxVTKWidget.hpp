@@ -4,11 +4,16 @@
 #include <unordered_map>
 #include <memory>
 
+#include <dependencies.hpp>
+
 #include <vtkGenericRenderWindowInteractor.h>
 #include <vtkNew.h>
 #include <vtkSmartPointer.h>
 #include <vtkCallbackCommand.h>
-#include <gdpp.h>
+
+#ifdef GD_FOUND
+#  include <gdpp.h>
+#endif //GD_FOUND
 
 #include <wx/timer.h>
 #include <wx/glcanvas.h>
@@ -39,7 +44,9 @@ public:
   }
   void SetRenderWindowInteractor(vtkGenericRenderWindowInteractor *interactor);
   void ResetCamera();
+#ifdef GD_FOUND
   GD::Image Screenshot();
+#endif //GD_FOUND
 
 private:
   // Window events

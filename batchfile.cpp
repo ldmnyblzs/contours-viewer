@@ -9,7 +9,11 @@
 #include "model/execute.hpp"
 #include "model/ratios.hpp"
 #include "parametersview.hpp"
+#ifdef TBB_FOUND
 #include <tbb/parallel_for_each.h>
+#else
+#include <boost/range/algorithm/for_each.hpp>
+#endif //TBB_FOUND
 
 wxDEFINE_EVENT(wxEVT_BATCHFILE_LOADED, wxThreadEvent);
 wxDEFINE_EVENT(wxEVT_BATCHFILE_COMPUTED, wxThreadEvent);
@@ -87,10 +91,10 @@ wxThread::ExitCode BatchFile::Entry() {
       wxQueueEvent(GetEventHandler(),
                    new wxThreadEvent(wxEVT_BATCHFILE_LOADED));
       break;
-    case RUN:
+    case RUN: {
       for (const auto &index : irange<typename std::vector<std::string>::size_type>(0ul, files.size()))
         set_status(index, STATUS_WAITING);
-      tbb::parallel_for_each(files | indexed(), [&](const auto &file) {
+      auto runner = [&](const auto &file) {
         set_status(file.index(), STATUS_RUNNING);
         try {
           Mesh mesh;
@@ -114,10 +118,15 @@ wxThread::ExitCode BatchFile::Entry() {
 	  std::cout << "wtf" << std::endl;
           set_status(file.index(), STATUS_ERROR);
         }
-      });
+      };
+#ifdef TBB_FOUND
+      tbb::parallel_for_each(files | indexed(), runner);
+#else
+      boost::range::for_each(files | indexed(), runner);
+#endif //TBB_FOUND
       wxQueueEvent(GetEventHandler(),
                    new wxThreadEvent(wxEVT_BATCHFILE_COMPUTED));
-      break;
+      break;}
     case SAVE:
       save_batch_file(m_fileName, event.second, m_results);
       break;

@@ -11,8 +11,10 @@
 
 #include "singlefile.hpp"
 #include "inputform.hpp"
+#ifdef VTK_FOUND
 #include "meshview.hpp"
 #include "graphview.hpp"
+#endif //VTK_FOUND
 #include "outputview.hpp"
 #include "model/execute.hpp"
 #include "model/ratios.hpp"
@@ -24,11 +26,12 @@ void SingleFile::Initialize() {
   m_manager.SetManagedWindow(this);
   m_input_form = new InputForm(this);
   
+#ifdef VTK_FOUND
   wxGLAttributes dispAttrs;
   dispAttrs.PlatformDefaults().DoubleBuffer().RGBA().BufferSize(32).MinRGBA(8, 8, 8, 8).Depth(16).SampleBuffers(0).Stencil(0).EndList();
   m_mesh_view = new MeshView(this, dispAttrs);
-
   m_graph_view = new GraphView(this, dispAttrs);
+#endif //VTK_FOUND
   
   m_output_view = new OutputView(m_fileName, this, wxID_ANY);
 
@@ -38,6 +41,7 @@ void SingleFile::Initialize() {
 		       .MinSize(m_input_form->GetMinSize())
 		       .Fixed()
 		       .Left());
+#ifdef VTK_FOUND
   m_manager.InsertPane(m_mesh_view,
 		       wxAuiPaneInfo()
 		       .Caption("Mesh")
@@ -50,6 +54,7 @@ void SingleFile::Initialize() {
 		       .MaximizeButton()
 		       .Center()
 		       .Position(1));
+#endif //VTK_FOUND
   m_manager.InsertPane(m_output_view,
 		       wxAuiPaneInfo()
 		       .Caption("Output")
@@ -78,26 +83,46 @@ void SingleFile::Cancel() {
 }
 
 void SingleFile::Save() {
-  wxFileDialog dialog(this, "Save", "", "", "PNG image (*.png)|*.png", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+  wxFileDialog dialog(this, "Save", "", "",
+		      "Batch file (*.csv)|*.csv"
+#ifdef GD_FOUND
+		      "|PNG image (*.png)|*.png"
+#endif //GD_FOUND
+		      ,
+		      wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 	
   if (dialog.ShowModal() == wxID_CANCEL)
     return;
-	
-  const auto output = m_output_view->Screenshot();
-  const auto mesh = m_mesh_view->Screenshot();
-  const auto graph = m_graph_view->Screenshot();
-	
-  const auto width = output.Width() + mesh.Width() + graph.Width();
-  const auto height = std::max(std::max(output.Height(), mesh.Height()), graph.Height());
   
-  GD::Image image(width, height, true);
-  image.Fill(0, 0, GD::TrueColor(255, 255, 255).Int());
-  image.Copy(output, 0, 0, 0, 0, output.Width(), output.Height());
-  image.Copy(mesh, output.Width(), 0, 0, 0, mesh.Width(), mesh.Height());
-  image.Copy(graph, output.Width() + mesh.Width(), 0, 0, 0, graph.Width(), graph.Height());
   wxFileOutputStream file_stream(dialog.GetPath());
   wxStdOutputStream std_stream(file_stream);
-  image.Png(std_stream, -1);
+  
+  switch(dialog.GetFilterIndex()) {
+  case 0:
+    std_stream << "Function not implemented yet" << std::endl;
+    break;
+#ifdef GD_FOUND
+  case 1: {
+    const auto output = m_output_view->Screenshot();
+#  ifdef VTK_FOUND
+    const auto mesh = m_mesh_view->Screenshot();
+    const auto graph = m_graph_view->Screenshot();
+	
+    const auto width = output.Width() + mesh.Width() + graph.Width();
+    const auto height = std::max(std::max(output.Height(), mesh.Height()), graph.Height());
+
+    GD::Image image(width, height, true);
+    image.Fill(0, 0, GD::TrueColor(255, 255, 255).Int());
+    image.Copy(output, 0, 0, 0, 0, output.Width(), output.Height());
+    image.Copy(mesh, output.Width(), 0, 0, 0, mesh.Width(), mesh.Height());
+    image.Copy(graph, output.Width() + mesh.Width(), 0, 0, 0, graph.Width(), graph.Height());
+    image.Png(std_stream, -1);
+#  else
+    output.Png(std_stream, -1);
+#  endif //VTK_FOUND
+    break;}
+#endif //GD_FOUND
+  }
 }
 
 bool SingleFile::Cancelled() const {
@@ -118,7 +143,9 @@ wxThread::ExitCode SingleFile::Entry() {
       volume = properties[1];
       m_output_view->UpdateMeshData(properties);
       m_output_view->UpdateRatios(ratios);
+#ifdef VTK_FOUND
       m_mesh_view->PrepareMesh(mesh);
+#endif //VTK_FOUND
       wxQueueEvent(GetEventHandler(), new wxThreadEvent(wxEVT_SINGLEFILE_LOADED));
       break;
     }
@@ -133,8 +160,11 @@ wxThread::ExitCode SingleFile::Entry() {
   return wxThread::ExitCode(0);
 }
 
-void SingleFile::OnLoaded(wxThreadEvent & WXUNUSED(event)) {
+void SingleFile::OnLoaded(wxThreadEvent & WXUNUSED(event)) {  
+#ifdef VTK_FOUND
   m_mesh_view->SwapMesh();
+#endif //VTK_FOUND
+
   m_output_view->Swap();
 
   m_manager.GetPane(m_output_view).MinSize(m_output_view->GetBestSize());
@@ -144,8 +174,10 @@ void SingleFile::OnLoaded(wxThreadEvent & WXUNUSED(event)) {
 }
 
 void SingleFile::OnComputed(wxThreadEvent & WXUNUSED(event)) {
+#ifdef VTK_FOUND
   m_mesh_view->SwapArcs();
   m_graph_view->Swap();
+#endif //VTK_FOUND
   m_output_view->Swap();
   
   m_manager.GetPane(m_output_view).MinSize(m_output_view->GetBestSize());
@@ -173,7 +205,9 @@ void SingleFile::level_graph(const std::string &filename,
 			     const Graph &graph,
 			     const std::vector<GraphEdge> &stable_edges,
 			     const std::vector<GraphEdge> &unstable_edges){
+#ifdef VTK_FOUND
   m_mesh_view->PrepareArcs(graph, stable_edges, unstable_edges);
+#endif //VTK_FOUND
 }
 void SingleFile::su(const std::string &filename,
 		    const CenterSphereGenerator &center_sphere,
@@ -193,7 +227,9 @@ void SingleFile::reeb(const std::string &filename,
 		      Aggregation aggregation,
 		      const Graph &graph,
 		      const std::string &code) {
+#ifdef VTK_FOUND
   m_graph_view->UpdateGraph(graph);
+#endif //VTK_FOUND
   m_output_view->UpdateReeb(code);
 }
 void SingleFile::morse(const std::string &filename,

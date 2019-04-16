@@ -150,6 +150,7 @@ void OutputView::Swap() {
   AutoSize();
 }
 
+#ifdef GD_FOUND
 GD::Image OutputView::Screenshot() const {
   const int font_width = 8;
   const int font_height = 16;
@@ -176,3 +177,4 @@ GD::Image OutputView::Screenshot() const {
                  static_cast<const char *>(GetCellValue(i, 0).c_str()), color);
   return image;
 }
+#endif //GD_FOUND

@@ -1,8 +1,12 @@
 #ifndef OUTPUT_VIEW_HPP
 #define OUTPUT_VIEW_HPP
 
+#include <dependencies.hpp>
+
+#ifdef GD_FOUND
 #undef TrueColor
 #include <gdpp.h>
+#endif //GD_FOUND
 
 #include <wx/thread.h>
 #include "model/parameters.hpp"
@@ -24,7 +28,9 @@ public:
   void UpdateReeb(const std::string &reeb);
   void UpdateMorse(const std::string &morse);
   void Swap();
+#ifdef GD_FOUND
   GD::Image Screenshot() const;
+#endif //GD_FOUND
 };
 
 #endif // OUTPUT_VIEW_HPP

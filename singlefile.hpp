@@ -6,12 +6,16 @@
 #include <wx/msgqueue.h>
 #include "computable.hpp"
 #include "model/parameters.hpp"
+#include <dependencies.hpp>
 
 class InputForm;
-class MeshView;
-class GraphView;
 class OutputView;
 class wxAuiNotebookEvent;
+
+#ifdef VTK_FOUND
+class MeshView;
+class GraphView;
+#endif //VTK_FOUND
 
 wxDECLARE_EVENT(wxEVT_SINGLEFILE_LOADED, wxThreadEvent);
 wxDECLARE_EVENT(wxEVT_SINGLEFILE_COMPUTED, wxThreadEvent);
@@ -19,8 +23,10 @@ wxDECLARE_EVENT(wxEVT_SINGLEFILE_COMPUTED, wxThreadEvent);
 class SingleFile final : public wxWindow, public wxThreadHelper, public Computable {
   wxAuiManager m_manager;
   InputForm *m_input_form;
+#ifdef VTK_FOUND
   MeshView *m_mesh_view;
   GraphView *m_graph_view;
+#endif
   OutputView *m_output_view;
 
   const std::string m_fileName;

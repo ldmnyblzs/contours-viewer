@@ -73,6 +73,7 @@ void wxVTKWidget::ResetCamera() {
 	Refresh();
 }
 
+#ifdef GD_FOUND
 GD::Image wxVTKWidget::Screenshot() {
   vtkNew<vtkWindowToImageFilter> image_filter;
   image_filter->SetInput(m_interactor->GetRenderWindow());
@@ -102,6 +103,7 @@ GD::Image wxVTKWidget::Screenshot() {
 
   return gdImageCropAuto(image.GetPtr(), GD_CROP_WHITE);
 }
+#endif //GD_FOUND
 
 void wxVTKWidget::Resize(wxSizeEvent &event) {
   if (m_interactor) {
