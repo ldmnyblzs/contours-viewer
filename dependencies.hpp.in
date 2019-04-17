@@ -1,0 +1,8 @@
+#ifndef DEPENDENCIES_HPP
+#define DEPENDENCIES_HPP
+
+#cmakedefine VTK_FOUND
+#cmakedefine GD_FOUND
+#cmakedefine TBB_FOUND
+
+#endif //DEPENDENCIES_HPP
