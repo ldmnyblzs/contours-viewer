@@ -11,6 +11,7 @@
 #include <wx/artprov.h>
 #include <wx/stdpaths.h>
 #include <wx/wupdlock.h>
+#include <wx/sysopt.h>
 
 #include "singlefile.hpp"
 #include "batchfile.hpp"
@@ -41,6 +42,7 @@ public:
 wxIMPLEMENT_APP(Application);
 
 bool Application::OnInit() {
+  wxSystemOptions::SetOption(wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES,1);
   auto window = new MainWindow(nullptr, wxID_ANY, "Shape descriptors");
   window->SetEventHandler(window);
   window->Show(true);
