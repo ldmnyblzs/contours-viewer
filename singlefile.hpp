@@ -50,7 +50,8 @@ public:
   template <typename... Args>
   explicit SingleFile(const wxString &fileName, Args&&... args) :
     wxWindow(std::forward<Args>(args)...),
-    m_fileName(fileName.ToStdString(wxConvUTF8)) {
+    //m_fileName(fileName.ToStdString(wxConvUTF8)) {
+    m_fileName(fileName.ToStdString()) {
     Initialize();
   }
   void Compute() final;

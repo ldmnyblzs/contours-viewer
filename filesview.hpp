@@ -3,6 +3,7 @@
 
 #include <wx/grid.h>
 #include <wx/thread.h>
+#include <vector>
 
 enum Status {
   STATUS_WAITING,

@@ -17,6 +17,7 @@
 
 #include <wx/timer.h>
 #include <wx/glcanvas.h>
+#include <vector>
 
 #undef TrueColor
 
@@ -27,9 +28,9 @@ public:
   template<typename... Args>
   explicit wxVTKWidget(Args&&... args) :
     wxGLCanvas(std::forward<Args>(args)...) {
-	wxGLContextAttrs attrs;
-    attrs.PlatformDefaults().CoreProfile().OGLVersion(3, 2).EndList();
-	m_context = new wxGLContext(this, nullptr, &attrs);
+    //wxGLContextAttrs attrs;
+    //attrs.PlatformDefaults().CoreProfile().OGLVersion(3, 2).EndList();
+    m_context = new wxGLContext(this);
 	
     m_create_timer_callback->SetClientData(this);
     m_create_timer_callback->SetCallback(&wxVTKWidget::CreateTimer);

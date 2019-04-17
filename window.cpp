@@ -84,7 +84,8 @@ void MainWindow::Initialize() {
 void MainWindow::OnOpen(wxCommandEvent & WXUNUSED(event)) {
   wxFileDialog dialog(this,
 		      wxFileSelectorPromptStr,
-		      wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Documents),
+		      "",
+		      //wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Documents),
 		      "",
 		      "Pebble files (*.stl;*.off)|*.stl;*.off|Batch files (*.csv)|*.csv",
 		      wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);

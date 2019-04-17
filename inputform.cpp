@@ -18,7 +18,7 @@ void InputForm::Initialize() {
   
   auto grid = new wxFlexGridSizer(2);
 
-  const auto flags = wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5);
+  const auto flags = wxSizerFlags().Expand().Center().Border(wxALL, 5);
   grid->Add(new wxStaticText(this, wxID_ANY, "Number of lines"), flags);
   grid->Add(m_count, flags);
   grid->Add(new wxStaticText(this, wxID_ANY, "Minimum area (%)"), flags);

@@ -27,10 +27,23 @@ void SingleFile::Initialize() {
   m_input_form = new InputForm(this);
   
 #ifdef VTK_FOUND
-  wxGLAttributes dispAttrs;
-  dispAttrs.PlatformDefaults().DoubleBuffer().RGBA().BufferSize(32).MinRGBA(8, 8, 8, 8).Depth(16).SampleBuffers(0).Stencil(0).EndList();
-  m_mesh_view = new MeshView(this, dispAttrs);
-  m_graph_view = new GraphView(this, dispAttrs);
+  //wxGLAttributes dispAttrs;
+  //dispAttrs.PlatformDefaults().DoubleBuffer().RGBA().BufferSize(32).MinRGBA(8, 8, 8, 8).Depth(16).SampleBuffers(0).Stencil(0).EndList();
+  constexpr int dispAttrs[] = {WX_GL_DOUBLEBUFFER,
+			       WX_GL_RGBA,
+			       WX_GL_BUFFER_SIZE, 32,
+			       WX_GL_MIN_RED, 8,
+			       WX_GL_MIN_GREEN, 8,
+			       WX_GL_MIN_BLUE, 8,
+			       WX_GL_DEPTH_SIZE, 16,
+			       WX_GL_SAMPLE_BUFFERS, 0,
+			       WX_GL_STENCIL_SIZE, 0,
+			       WX_GL_CORE_PROFILE,
+			       WX_GL_MAJOR_VERSION, 3,
+			       WX_GL_MINOR_VERSION, 2,
+			       0};
+  m_mesh_view = new MeshView(this, wxID_ANY, dispAttrs);
+  m_graph_view = new GraphView(this, wxID_ANY, dispAttrs);
 #endif //VTK_FOUND
   
   m_output_view = new OutputView(m_fileName, this, wxID_ANY);

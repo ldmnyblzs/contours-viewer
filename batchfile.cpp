@@ -56,7 +56,8 @@ void BatchFile::Save() {
   if (dialog.ShowModal() == wxID_CANCEL)
     return;
 
-  m_queue.Post(std::make_pair(SAVE, dialog.GetPath().ToStdString(wxConvUTF8)));
+  //m_queue.Post(std::make_pair(SAVE, dialog.GetPath().ToStdString(wxConvUTF8)));
+  m_queue.Post(std::make_pair(SAVE, dialog.GetPath().ToStdString()));
 }
 
 bool BatchFile::Cancelled() const { return m_cancelled; }
