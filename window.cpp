@@ -42,7 +42,9 @@ public:
 wxIMPLEMENT_APP(Application);
 
 bool Application::OnInit() {
+#ifdef wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES
   wxSystemOptions::SetOption(wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES,1);
+#endif
   auto window = new MainWindow(nullptr, wxID_ANY, "Shape descriptors");
   window->SetEventHandler(window);
   window->Show(true);
@@ -87,8 +89,7 @@ void MainWindow::OnOpen(wxCommandEvent & WXUNUSED(event)) {
   wxFileDialog dialog(this,
 		      wxFileSelectorPromptStr,
 		      "",
-		      //wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Documents),
-		      "",
+		      wxStandardPaths::Get().GetDocumentsDir(),
 		      "Pebble files (*.stl;*.off)|*.stl;*.off|Batch files (*.csv)|*.csv",
 		      wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
   if (dialog.ShowModal() == wxID_CANCEL)
