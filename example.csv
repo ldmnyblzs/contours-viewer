@@ -1,0 +1,14 @@
+I.;kiserlet alapadatai;;;;;;;;;;
+Dob;0;;;;;;;;;;
+Terelok;0;;;;;;;;;;
+Fordulatszam;0;;;;;;;;;;
+Mereskoz;0;;;;;;;;;;
+Koptato anyag;0;;;;;;;;;;
+;;;;;;;;;;;
+II.;Vizsgalando paremeterek;;;;;;;;;;
+sorszam;gomb terfogat aranya [%];kozeppontok szama [db];szintvonalak szama [db];egyensuly terulet aranya [%];osszegzes;;;;;;
+1;0;1;100;1;elso;;;;;;
+;;;;;;;;;;;
+Parameter-par sorszama:;;;0;(kezi meres);;;;;;;
+Adat megnevzese:;fajl neve;Fragmens;Tomeg;a;b;c;S;U;c/a;b/a;Fordulat
+1;1.stl;1;0;0;0;0;0;0;0;0;0
