@@ -4,6 +4,7 @@ A graphical frontend for https://github.com/ldmnyblzs/libcontours
 
 ## Dependencies
 
+The libcontours library is required with all its dependencies.
 Boost, wxWidgets are required. VTK, libGD and TBB are optional.
 
 ## Compilation
