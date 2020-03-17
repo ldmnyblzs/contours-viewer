@@ -18,7 +18,7 @@ cmake --build .
 
 ## Usage
 
-Run the `tr` executable from the `build` folder!
+Run the `contours_viewer` executable from the `build` folder!
 
 Click Open to load a single file in STL or OFF format or a batch file in CSV format. In the former case you can set the input parameters on the left hand side. Either way, click Compute to run the computations. When finished, click Save to store the results in an image file or in a CSV.
 
