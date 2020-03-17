@@ -45,7 +45,7 @@ bool Application::OnInit() {
 #ifdef wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES
   wxSystemOptions::SetOption(wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES,1);
 #endif
-  auto window = new MainWindow(nullptr, wxID_ANY, "Shape descriptors");
+  auto window = new MainWindow(nullptr, wxID_ANY, "Contours viewer");
   window->SetEventHandler(window);
   window->Show(true);
   return true;

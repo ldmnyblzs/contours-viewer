@@ -12,7 +12,7 @@ Boost, wxWidgets are required. VTK, libGD and TBB are optional.
 ```
 mkdir build
 cd build
-bliss_DIR=../../bliss-cmake/build/lib/cmake/bliss/ shape_DIR=../../libcontours/build/lib/cmake/shape/ cmake ..
+bliss_DIR=../../bliss-cmake/build/lib/cmake/bliss/ contours_DIR=../../libcontours/build/lib/cmake/contours/ cmake ..
 cmake --build .
 ```
 

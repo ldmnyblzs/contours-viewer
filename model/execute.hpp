@@ -6,17 +6,17 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/range/adaptor/indexed.hpp>
 #include <boost/filesystem/path.hpp>
-#include <shape/intersect_faces.hpp>
-#include <shape/intersect_halfedges.hpp>
-#include <shape/mesh_properties.hpp>
-#include <shape/stl_io.hpp>
-#include <shape/util.hpp>
-#include <shape/merge_equal_vertices.hpp>
-#include <shape/discover_graph.hpp>
-#include <shape/find_equilibra.hpp>
-#include <shape/make_reeb.hpp>
-#include <shape/encode_graph.hpp>
-#include <shape/axes.hpp>
+#include <contours/intersect_faces.hpp>
+#include <contours/intersect_halfedges.hpp>
+#include <contours/mesh_properties.hpp>
+#include <contours/stl_io.hpp>
+#include <contours/util.hpp>
+#include <contours/merge_equal_vertices.hpp>
+#include <contours/discover_graph.hpp>
+#include <contours/find_equilibra.hpp>
+#include <contours/make_reeb.hpp>
+#include <contours/encode_graph.hpp>
+#include <contours/axes.hpp>
 #include <string>
 #include <vector>
 
@@ -52,16 +52,16 @@ void execute(const std::string &filename,
 
     for (const auto &center : centers | indexed()) {
       const auto min_distance =
-	shape::min_distance(mesh, mesh.points(), center.value());
+	contours::min_distance(mesh, mesh.points(), center.value());
       const auto max_distance =
-	shape::max_distance(mesh, mesh.points(), center.value()) + 0.0001;
+	contours::max_distance(mesh, mesh.points(), center.value()) + 0.0001;
 
       for (const auto &level_count : center_sphere.value().next | indexed()) {
         const auto step =
 	  (max_distance - min_distance) / (level_count.value().value + 1);
 	std::vector<std::map<int, std::pair<Point, Point>>> h_i(mesh.num_halfedges());
 	auto halfedge_intersections = boost::make_iterator_property_map(h_i.begin(), CGAL::get(boost::halfedge_index, mesh));
-        shape::intersect_halfedges(mesh, mesh.points(), center.value(), min_distance,
+        contours::intersect_halfedges(mesh, mesh.points(), center.value(), min_distance,
                                    step, halfedge_intersections);
         Graph graph;
         auto area_map = boost::get(&VertexProperty::area, graph);
@@ -82,17 +82,17 @@ void execute(const std::string &filename,
 	std::vector<std::map<int, GraphVertex>> f_h(mesh.num_halfedges()), t_h(mesh.num_halfedges());
 	auto to_halfedge = boost::make_iterator_property_map(t_h.begin(), CGAL::get(boost::halfedge_index, mesh));
 	auto from_halfedge = boost::make_iterator_property_map(f_h.begin(), CGAL::get(boost::halfedge_index, mesh));
-	shape::intersect_faces(mesh, mesh.points(), halfedge_intersections,
+	contours::intersect_faces(mesh, mesh.points(), halfedge_intersections,
                                to_halfedge, from_halfedge, center.value(), min_distance,
                                step, graph, area_map, eq_map, edge_level, arc_list);
-        shape::merge_equal_vertices(graph, eq_map, area_map, visited_map, arc_list);
-        shape::discover_graph(graph, area_map, area_inside_map, roots_inside_map, back_inserter(stable_vertices));
-	shape::discover_graph(reverse, area_map, area_outside_map, roots_outside_map, back_inserter(unstable_vertices));
+        contours::merge_equal_vertices(graph, eq_map, area_map, visited_map, arc_list);
+        contours::discover_graph(graph, area_map, area_inside_map, roots_inside_map, back_inserter(stable_vertices));
+	contours::discover_graph(reverse, area_map, area_outside_map, roots_outside_map, back_inserter(unstable_vertices));
         for (const auto &area_ratio : level_count.value().next | indexed()) {
           vector<GraphEdge> stable_edges;
 	  vector<ReverseEdge> unstable_edges;
-          shape::find_equilibria(graph, stable_vertices, area_inside_map, roots_inside_map, back_inserter(stable_edges), area * area_ratio.value().value);
-          shape::find_equilibria(reverse, unstable_vertices, area_outside_map, roots_outside_map, back_inserter(unstable_edges), area * area_ratio.value().value);
+          contours::find_equilibria(graph, stable_vertices, area_inside_map, roots_inside_map, back_inserter(stable_edges), area * area_ratio.value().value);
+          contours::find_equilibria(reverse, unstable_vertices, area_outside_map, roots_outside_map, back_inserter(unstable_edges), area * area_ratio.value().value);
 	  
 	  vector<GraphEdge> underlying_unstable;
 	  for (const auto &u : unstable_edges)
@@ -106,23 +106,23 @@ void execute(const std::string &filename,
 	  if (boost::find(area_ratio.value().next, FIRST) != area_ratio.value().next.end() && center.index() == 0) {
 	    for (const auto &vertex : boost::make_iterator_range(boost::vertices(graph)))
 	      graph[vertex].visited = false;
-	    shape::mark_inside(graph, stable_vertices, stable_edges, visited_map);
-	    shape::mark_inside(reverse, unstable_vertices, unstable_edges, visited_map);
+	    contours::mark_inside(graph, stable_vertices, stable_edges, visited_map);
+	    contours::mark_inside(reverse, unstable_vertices, unstable_edges, visited_map);
 
 	    // make a copy
 	    Graph reeb(graph);
 	    auto reeb_visited_map = boost::get(&VertexProperty::visited, reeb);
 	    auto reeb_edge_level = boost::get(&EdgeProperty::level, reeb);
 	    auto reeb_vertex_level = boost::get(&VertexProperty::level, reeb);
-	    shape::make_reeb(reeb, reeb_visited_map, reeb_edge_level, reeb_vertex_level);
+	    contours::make_reeb(reeb, reeb_visited_map, reeb_edge_level, reeb_vertex_level);
 	    for (const auto &vertex : boost::make_iterator_range(boost::vertices(reeb)) | indexed())
 	      reeb[vertex.value()].id = vertex.index();
 	    auto reeb_vertex_id = boost::get(&VertexProperty::id, reeb);
 	    auto reeb_vertex_label = boost::get(&VertexProperty::label, reeb);
-	    shape::reeb_encode(reeb, reeb_vertex_id, reeb_vertex_label);
-	    saver.reeb(filename, center_sphere.value().value, level_count.value().value, area_ratio.value().value, FIRST, reeb, shape::encode(reeb, reeb_vertex_label));
-	    if (shape::make_morse(reeb, reeb_vertex_level, reeb_vertex_label))
-	      saver.morse(filename, center_sphere.value().value, level_count.value().value, area_ratio.value().value, FIRST, shape::encode(reeb, reeb_vertex_label));
+	    contours::reeb_encode(reeb, reeb_vertex_id, reeb_vertex_label);
+	    saver.reeb(filename, center_sphere.value().value, level_count.value().value, area_ratio.value().value, FIRST, reeb, contours::encode(reeb, reeb_vertex_label));
+	    if (contours::make_morse(reeb, reeb_vertex_level, reeb_vertex_label))
+	      saver.morse(filename, center_sphere.value().value, level_count.value().value, area_ratio.value().value, FIRST, contours::encode(reeb, reeb_vertex_label));
 	  }
         }
       }
